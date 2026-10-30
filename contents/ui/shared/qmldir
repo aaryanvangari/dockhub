@@ -1,0 +1,2 @@
+module Dockhub.Shared
+singleton Strings 1.0 Strings.qml

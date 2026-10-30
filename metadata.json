@@ -1,0 +1,24 @@
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "aaryanvangari@gmail.com",
+                "Name": "Aaryan Vangari"
+            }
+        ],
+        "Category": "System Information",
+        "Description": "A hub for all your docker servers",
+        "Icon": "dockio-icon",
+        "Id": "com.opensquares.dockhub",
+        "License": "GPL-3.0+",
+        "Name": "Dockhub",
+        "Version": "1.0.0",
+        "Website": "https://github.com/aaryanvangari/dockhub",
+        "Depends": [],
+        "EnabledByDefault": false
+    },
+    "X-Plasma-NotificationArea": true,
+    "X-Plasma-NotificationAreaCategory": "SystemServices",
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "KPackageStructure": "Plasma/Applet"
+}
