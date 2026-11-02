@@ -33,11 +33,11 @@ Item {
         spacing: 8
 
         Item {
+            id: headingRow
             Layout.fillWidth: true
-            implicitHeight: header.implicitHeight + 12
-
+            implicitHeight: heading.implicitHeight + 12
             RowLayout {
-                id: header
+                id: heading
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
@@ -47,50 +47,11 @@ Item {
                     Layout.preferredWidth: 20
                     Layout.preferredHeight: 20
                 }
-                ColumnLayout {
+                PlasmaComponents.Label {
                     Layout.fillWidth: true
-                    Layout.minimumWidth: 0
-                    spacing: 2
-                    PlasmaComponents.Label {
-                        Layout.fillWidth: true
-                        text: modelData.Name || "—"
-                        font.bold: true
-                        elide: Text.ElideRight
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 5
-                        PlasmaComponents.Label {
-                            text: Shared.Strings.valueLabel(Shared.Strings.idLabel, String(modelData.Id || "").slice(0, 12) || "—")
-                            opacity: 0.8
-                            font.pixelSize: 14
-                        }
-                        PlasmaComponents.ToolButton {
-                            icon.name: IconNames.copy
-                            display: QQC2.AbstractButton.IconOnly
-                            implicitWidth: 24
-                            implicitHeight: 24
-                            QQC2.ToolTip.text: Shared.Strings.copyShortNetworkID
-                            QQC2.ToolTip.visible: hovered
-                            onClicked: clipboard.content = String(modelData.Id || "").slice(0, 12)
-                        }
-                        PlasmaComponents.Label {
-                            Layout.fillWidth: true
-                            Layout.minimumWidth: 0
-                            text: Shared.Strings.valueLabel(Shared.Strings.driver, modelData.Driver || "—")
-                            opacity: 0.8
-                            font.pixelSize: 14
-                            elide: Text.ElideRight
-                        }
-                        PlasmaComponents.Label {
-                            Layout.fillWidth: true
-                            Layout.minimumWidth: 0
-                            text: Shared.Strings.valueLabel(Shared.Strings.scope, modelData.Scope || "—")
-                            opacity: 0.8
-                            font.pixelSize: 14
-                            elide: Text.ElideRight
-                        }
-                    }
+                    text: modelData.Name || "—"
+                    font.bold: true
+                    elide: Text.ElideRight
                 }
                 PlasmaComponents.Label {
                     visible: details.Containers !== undefined && details.Containers !== null
@@ -98,21 +59,82 @@ Item {
                     opacity: 0.8
                 }
                 Kirigami.Icon {
-                    source: expanded ? IconNames.collapse : IconNames.expand
+                    source: networkRow.expanded ? IconNames.collapse : IconNames.expand
                     Layout.preferredWidth: 16
                     Layout.preferredHeight: 16
                 }
             }
-            MouseArea {
-                anchors.fill: parent
-                z: -1
-                cursorShape: Qt.PointingHandCursor
-                onClicked: controller.toggleNetworkExpanded(modelData)
+        }
+
+        RowLayout {
+            id: summaryRow
+            Layout.fillWidth: true
+            spacing: 8
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+                Layout.preferredWidth: 1
+                Layout.horizontalStretchFactor: 38
+                spacing: 6
+                Kirigami.Icon {
+                    source: IconNames.id
+                    Layout.preferredWidth: 16
+                    Layout.preferredHeight: 16
+                }
+                PlasmaComponents.Label {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    text: Shared.Strings.valueLabel(Shared.Strings.idLabel, String(modelData.Id || "").slice(0, 12) || "—")
+                    elide: Text.ElideRight
+                }
+                PlasmaComponents.ToolButton {
+                    icon.name: IconNames.copy
+                    display: QQC2.AbstractButton.IconOnly
+                    QQC2.ToolTip.text: Shared.Strings.copyShortNetworkID
+                    QQC2.ToolTip.visible: hovered
+                    onClicked: clipboard.content = String(modelData.Id || "").slice(0, 12)
+                }
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+                Layout.preferredWidth: 1
+                Layout.horizontalStretchFactor: 32
+                spacing: 6
+                Kirigami.Icon {
+                    source: IconNames.driver
+                    Layout.preferredWidth: 16
+                    Layout.preferredHeight: 16
+                }
+                PlasmaComponents.Label {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    text: Shared.Strings.valueLabel(Shared.Strings.driver, modelData.Driver || "—")
+                    elide: Text.ElideRight
+                }
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+                Layout.preferredWidth: 1
+                Layout.horizontalStretchFactor: 30
+                spacing: 6
+                Kirigami.Icon {
+                    source: IconNames.scope
+                    Layout.preferredWidth: 16
+                    Layout.preferredHeight: 16
+                }
+                PlasmaComponents.Label {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    text: Shared.Strings.valueLabel(Shared.Strings.scope, modelData.Scope || "—")
+                    elide: Text.ElideRight
+                }
             }
         }
 
         ColumnLayout {
-            visible: expanded
+            visible: networkRow.expanded
             Layout.fillWidth: true
             spacing: 8
 
@@ -423,5 +445,15 @@ Item {
             Layout.preferredHeight: 1
             color: Qt.alpha(Kirigami.Theme.textColor, 0.25)
         }
+    }
+
+    MouseArea {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        height: headingRow.height + summaryRow.height
+        z: -1
+        cursorShape: Qt.PointingHandCursor
+        onClicked: controller.toggleNetworkExpanded(modelData)
     }
 }
