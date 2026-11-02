@@ -14,6 +14,7 @@ Kirigami.ScrollablePage {
     property alias cfg_showServerImages: serverImagesCheck.checked
     property alias cfg_showServerVolumes: serverVolumesCheck.checked
     property alias cfg_servers: serializedServers.text
+    
     property int cfg_updateIntervalDefault: 30
     property int cfg_serverOverviewRefreshIntervalDefault: 45
     property int cfg_usageIntervalDefault: 5
@@ -21,6 +22,9 @@ Kirigami.ScrollablePage {
     property bool cfg_showServerImagesDefault: false
     property bool cfg_showServerVolumesDefault: false
     property string cfg_serversDefault: "[]"
+    property string cfg_connectionTypeDefault: "[]"
+    property string cfg_connectionType: ""
+
     readonly property string generalLabel: i18n("General")
     readonly property string refreshDashboardEveryLabel: i18n("Refresh dashboard every")
     readonly property string refreshServerOverviewEveryLabel: i18n("Refresh server overview every")
@@ -71,11 +75,6 @@ Kirigami.ScrollablePage {
                     return parseInt(text);
                 }
             }
-        }
-
-        Kirigami.FormLayout {
-            Layout.fillWidth: true
-
             Kirigami.Separator {
                 Kirigami.FormData.isSection: true
                 Kirigami.FormData.label: page.serverLabel
@@ -105,23 +104,22 @@ Kirigami.ScrollablePage {
                     return String(value) + " " + page.columnsSuffix;
                 }
             }
-
-            QQC2.CheckBox {
-                id: serverImagesCheck
+    
+            RowLayout {
                 Kirigami.FormData.label: " "
-                text: page.imagesLabel
+                spacing: Kirigami.Units.largeSpacing
+                QQC2.CheckBox {
+                    id: serverImagesCheck
+                    text: page.imagesLabel
+                }
+                QQC2.CheckBox {
+                    id: serverVolumesCheck
+                    text: page.volumesLabel
+                }
             }
-
-            QQC2.CheckBox {
-                id: serverVolumesCheck
-                Kirigami.FormData.label: " "
-                text: page.volumesLabel
-            }
-
             QQC2.Label {
-                Layout.fillWidth: true
-                Kirigami.FormData.label: " "
                 text: page.extraServerCallsNote
+                font: Kirigami.Theme.smallFont
                 wrapMode: Text.WordWrap
                 opacity: 0.75
             }
