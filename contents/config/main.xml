@@ -27,6 +27,9 @@
   <entry name="servers" type="String">
     <default>[]</default>
   </entry>
+  <entry name="connectionType" type="String">
+    <default>[]</default>
+  </entry>
 </group>
 
 </kcfg>

@@ -10,11 +10,17 @@ import org.kde.plasma.components 3.0 as PlasmaComponents
 import org.kde.kquickcontrolsaddons as KQuickControlsAddons
 import org.kde.kirigami as Kirigami
 import "components" as Components
+import OpenSquares.DockHub
 
 PlasmoidItem {
     id: root
     Plasmoid.icon: IconNames.app
     property alias sharedClipboard: clipboard
+    property alias sharedUnixSocketBridge: unixSocketBridge
+
+    UnixSocketBridge {
+        id: unixSocketBridge
+    }
 
     KQuickControlsAddons.Clipboard {
         id: clipboard
@@ -36,6 +42,7 @@ PlasmoidItem {
         Components.DashboardController {
             id: page
             configuration: Plasmoid.configuration
+            unixSocketBridge: root.sharedUnixSocketBridge
         }
         RowLayout {
             id: topBar

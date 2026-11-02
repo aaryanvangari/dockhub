@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import "../IconNames.js" as IconNames
 import QtQuick.Controls as QQC2
@@ -6,11 +8,12 @@ import org.kde.plasma.configuration
 import org.kde.kirigami as Kirigami
 
 Kirigami.ScrollablePage {
-    id: page
+    id: rootPage
 
     property alias cfg_servers: serializedServers.text
-    // Plasma supplies the configuration values and defaults to each category page.
-    // Declare the settings owned by the General page here too so page creation succeeds.
+    property alias cfg_connectionType: serializedConnectionType.text
+
+    // Settings owned by the General page.
     property int cfg_updateInterval: 30
     property int cfg_updateIntervalDefault: 30
     property int cfg_serverOverviewRefreshInterval: 45
@@ -23,15 +26,22 @@ Kirigami.ScrollablePage {
     property bool cfg_showServerImagesDefault: false
     property bool cfg_showServerVolumes: false
     property bool cfg_showServerVolumesDefault: false
+
     property string cfg_serversDefault: "[]"
+    property string cfg_connectionTypeDefault: "[]"
+
     readonly property string serversLabel: i18n("Servers")
     readonly property string serverLabel: i18n("Server")
     readonly property string nameLabel: i18n("Name")
     readonly property string hostUrlLabel: i18n("Host URL")
+    readonly property string socketPathLabel: i18n("Unix Socket Path")
     readonly property string exampleProduction: i18n("For example, Production")
+    readonly property string connectionTypeLabel: i18n("Connection Type")
     readonly property string enabledLabel: i18n("Enabled")
     readonly property string deleteServerTooltip: i18n("Delete server")
     readonly property string addServerLabel: i18n("Add Server")
+    readonly property string connectionHttp: i18n("HTTP / TCP")
+    readonly property string connectionSocket: i18n("Unix Socket")
 
     function serverNumber(number) {
         return serverLabel + " " + String(number);
@@ -39,13 +49,18 @@ Kirigami.ScrollablePage {
 
     function loadServers() {
         serversModel.clear();
+
         try {
-            const entries = JSON.parse(serializedServers.text || "[]");
-            for (let i = 0; i < entries.length; ++i) {
+            const serverEntries = JSON.parse(serializedServers.text || "[]");
+            const connEntries = JSON.parse(serializedConnectionType.text || "[]");
+            const maxLen = Math.max(serverEntries.length, connEntries.length);
+
+            for (let i = 0; i < maxLen; ++i) {
                 serversModel.append({
-                    name: entries[i].name || "",
-                    host: entries[i].host || "",
-                    active: entries[i].enabled !== false
+                    name: (serverEntries[i] || {}).name || "",
+                    host: (serverEntries[i] || {}).host || "",
+                    active: (serverEntries[i] || {}).enabled !== false,
+                    connectionType: (connEntries[i] || {}).connectionType || "http"
                 });
             }
         } catch (e) {
@@ -54,24 +69,186 @@ Kirigami.ScrollablePage {
     }
 
     function saveServers() {
-        const entries = [];
+        const serverEntries = [];
+        const connEntries = [];
+
         for (let i = 0; i < serversModel.count; ++i) {
             const entry = serversModel.get(i);
-            entries.push({
+
+            serverEntries.push({
                 name: entry.name,
                 host: entry.host,
                 enabled: entry.active
             });
+
+            connEntries.push({
+                connectionType: entry.connectionType || "http"
+            });
         }
-        serializedServers.text = JSON.stringify(entries);
+
+        serializedServers.text = JSON.stringify(serverEntries);
+        serializedConnectionType.text = JSON.stringify(connEntries);
     }
 
     ListModel {
         id: serversModel
     }
-    // This control is the KConfig-backed property used by Plasma's config dialog.
+
+    // Keep the delegate in the page's component context.
+    // This allows it to access rootPage and serversModel directly.
+    Component {
+        id: serverDelegateComponent
+
+        ColumnLayout {
+            id: serverDelegate
+
+            required property int index
+            required property string name
+            required property string host
+            required property string connectionType
+            required property bool active
+
+            Layout.fillWidth: true
+            spacing: Kirigami.Units.smallSpacing
+
+            QQC2.Label {
+                text: rootPage.serverNumber(serverDelegate.index + 1)
+                font.bold: true
+            }
+
+            // First row: Name and connection type.
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Kirigami.Units.smallSpacing
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 2
+
+                    QQC2.Label {
+                        text: rootPage.nameLabel
+                    }
+
+                    QQC2.TextField {
+                        Layout.fillWidth: true
+                        placeholderText: rootPage.exampleProduction
+                        text: serverDelegate.name
+
+                        onTextEdited: {
+                            serversModel.setProperty(serverDelegate.index, "name", text);
+                            rootPage.saveServers();
+                        }
+                    }
+                }
+
+                ColumnLayout {
+                    Layout.preferredWidth: 180
+                    spacing: 2
+
+                    QQC2.Label {
+                        text: rootPage.connectionTypeLabel
+                    }
+
+                    QQC2.ComboBox {
+                        Layout.fillWidth: true
+
+                        model: [
+                            rootPage.connectionHttp,
+                            rootPage.connectionSocket
+                        ]
+
+                        currentIndex: serverDelegate.connectionType === "http" ? 0 : 1
+
+                        onActivated: function(comboIndex) {
+                            serversModel.setProperty(
+                                serverDelegate.index,
+                                "connectionType",
+                                comboIndex === 0 ? "http" : "socket"
+                            );
+
+                            rootPage.saveServers();
+                        }
+                    }
+                }
+            }
+
+            // Second row: Host/socket path, enabled and delete.
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Kirigami.Units.smallSpacing
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 2
+
+                    QQC2.Label {
+                        text: serverDelegate.connectionType === "socket"
+                              ? rootPage.socketPathLabel
+                              : rootPage.hostUrlLabel
+                    }
+
+                    QQC2.TextField {
+                        Layout.fillWidth: true
+
+                        placeholderText: serverDelegate.connectionType === "socket"
+                                         ? "/run/user/1000/docker.sock"
+                                         : "http://host:2375"
+
+                        text: serverDelegate.host
+
+                        inputMethodHints: serverDelegate.connectionType === "http"
+                                          ? Qt.ImhUrlCharactersOnly
+                                          : Qt.ImhNone
+
+                        onTextEdited: {
+                            serversModel.setProperty(serverDelegate.index, "host", text);
+                            rootPage.saveServers();
+                        }
+                    }
+                }
+
+                QQC2.CheckBox {
+                    text: rootPage.enabledLabel
+                    checked: serverDelegate.active
+                    Layout.alignment: Qt.AlignBottom
+
+                    onToggled: {
+                        serversModel.setProperty(serverDelegate.index, "active", checked);
+                        rootPage.saveServers();
+                    }
+                }
+
+                QQC2.ToolButton {
+                    icon.name: IconNames.remove
+                    display: QQC2.AbstractButton.IconOnly
+                    Layout.alignment: Qt.AlignBottom
+
+                    QQC2.ToolTip.text: rootPage.deleteServerTooltip
+                    QQC2.ToolTip.visible: hovered
+
+                    onClicked: {
+                        serversModel.remove(serverDelegate.index);
+                        rootPage.saveServers();
+                    }
+                }
+            }
+
+            Kirigami.Separator {
+                Layout.fillWidth: true
+                Layout.topMargin: Kirigami.Units.smallSpacing
+                Layout.bottomMargin: Kirigami.Units.smallSpacing
+            }
+        }
+    }
+
+    // KConfig-backed properties used by Plasma's configuration dialog.
     QQC2.TextField {
         id: serializedServers
+        visible: false
+    }
+
+    QQC2.TextField {
+        id: serializedConnectionType
         visible: false
     }
 
@@ -81,6 +258,7 @@ Kirigami.ScrollablePage {
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.right: parent.right
+
         spacing: Kirigami.Units.largeSpacing
 
         ColumnLayout {
@@ -88,100 +266,34 @@ Kirigami.ScrollablePage {
             spacing: Kirigami.Units.mediumSpacing
 
             Kirigami.Heading {
-                text: page.serversLabel
+                text: rootPage.serversLabel
                 level: 2
             }
+
             Kirigami.Separator {
                 Layout.fillWidth: true
             }
 
             Repeater {
                 model: serversModel
-                delegate: ColumnLayout {
-                    required property int index
-                    required property string name
-                    required property string host
-                    required property bool active
-                    Layout.fillWidth: true
-                    spacing: Kirigami.Units.smallSpacing
-
-                    QQC2.Label {
-                        text: page.serverNumber(index + 1)
-                        font.bold: true
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: Kirigami.Units.smallSpacing
-
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 2
-                            QQC2.Label {
-                                text: page.nameLabel
-                            }
-                            QQC2.TextField {
-                                Layout.fillWidth: true
-                                placeholderText: page.exampleProduction
-                                text: name
-                                onTextEdited: {
-                                    serversModel.setProperty(index, "name", text);
-                                    page.saveServers();
-                                }
-                            }
-                        }
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 2
-                            QQC2.Label {
-                                text: page.hostUrlLabel
-                            }
-                            QQC2.TextField {
-                                Layout.fillWidth: true
-                                placeholderText: "http://host:2375"
-                                text: host
-                                inputMethodHints: Qt.ImhUrlCharactersOnly
-                                onTextEdited: {
-                                    serversModel.setProperty(index, "host", text);
-                                    page.saveServers();
-                                }
-                            }
-                        }
-                        QQC2.CheckBox {
-                            text: page.enabledLabel
-                            checked: active
-                            Layout.alignment: Qt.AlignBottom
-                            onToggled: {
-                                serversModel.setProperty(index, "active", checked);
-                                page.saveServers();
-                            }
-                        }
-                        QQC2.ToolButton {
-                            icon.name: IconNames.remove
-                            display: QQC2.AbstractButton.IconOnly
-                            Layout.alignment: Qt.AlignBottom
-                            QQC2.ToolTip.text: page.deleteServerTooltip
-                            QQC2.ToolTip.visible: hovered
-                            onClicked: {
-                                serversModel.remove(index);
-                                page.saveServers();
-                            }
-                        }
-                    }
-                }
+                delegate: serverDelegateComponent
             }
         }
+
         QQC2.Button {
-            text: page.addServerLabel
+            text: rootPage.addServerLabel
             icon.name: IconNames.add
             Layout.alignment: Qt.AlignLeft
+
             onClicked: {
                 serversModel.append({
                     name: "",
                     host: "",
+                    connectionType: "http",
                     active: true
                 });
-                page.saveServers();
+
+                rootPage.saveServers();
             }
         }
     }

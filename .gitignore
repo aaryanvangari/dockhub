@@ -1,0 +1,77 @@
+# ------------------------------------------------------------------
+# CMake build directory
+# ------------------------------------------------------------------
+/build/
+/cmake-build-*/
+
+# ------------------------------------------------------------------
+# CMake generated files
+# ------------------------------------------------------------------
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+Makefile
+
+# ------------------------------------------------------------------
+# Qt / QML generated files
+# ------------------------------------------------------------------
+.qt/
+*_autogen/
+*_autogen_timestamp_deps
+*_qmltyperegistrations.cpp
+*_qml_module_dir_map.qrc
+*_metatypes.json
+qmldir
+*.qmltypes
+
+# ------------------------------------------------------------------
+# Compiled binaries and libraries
+# ------------------------------------------------------------------
+*.o
+*.obj
+*.so
+*.so.*
+*.a
+*.dll
+*.dylib
+
+# ------------------------------------------------------------------
+# IDE and editor files
+# ------------------------------------------------------------------
+.idea/
+.vscode/
+*.user
+*.user.*
+*.swp
+*.swo
+*~
+
+# ------------------------------------------------------------------
+# Temporary files
+# ------------------------------------------------------------------
+*.log
+.DS_Store
+Thumbs.db
+
+# ------------------------------------------------------------------
+# QML language-server configuration
+# ------------------------------------------------------------------
+.contextProperties.ini
+
+# ------------------------------------------------------------------
+# Debian packaging build artifacts
+# ------------------------------------------------------------------
+/build/
+/build-deb/
+/package-root/
+/debian/files
+/contents/ui/OpenSquares/DockHub/*.so
+/debian/.debhelper/
+/debian/debhelper-build-stamp
+/debian/*.substvars
+/debian/dockhub/
+/debian/tmp/
+/obj-*/
+/share/
+/release/

@@ -11,6 +11,8 @@ Item {
     height: 0
     property var configuration
 
+    property var unixSocketBridge
+
     property var servers: []
     property var selectedServer: null
     property string selectedResource: ""
@@ -53,13 +55,19 @@ Item {
     function loadServers() {
         try {
             const configured = JSON.parse(page.configuration.servers || "[]");
+            const connConfigured = JSON.parse(page.configuration.connectionType || "[]");
             page.servers = configured.filter(function (s) {
                 return s.enabled && s.name && s.host;
-            }).map(function (s) {
+            }).map(function (s, idx) {
+                // For HTTP servers: host is a URL like "http://host:2375"
+                // For socket servers: host is a socket path like "/var/run/docker.sock"
+                const connType = (connConfigured[idx] || {}).connectionType || "http";
+                const url = connType === "socket" ? s.host : s.host;
                 return {
                     name: s.name,
-                    url: s.host,
+                    url: url,
                     apiPrefix: "",
+                    connectionType: connType,
                     online: false,
                     running: 0,
                     containers: 0,
@@ -72,7 +80,8 @@ Item {
                     kernelVersion: "—",
                     architecture: "—",
                     dockerRootDir: "—",
-                    dockerSocket: "—",
+                    driver: "—",
+                    logDriver: "—",
                     serverVersion: "—",
                     apiVersion: "—",
                     minApiVersion: "—"
@@ -171,14 +180,14 @@ Item {
         };
 
         if (resource === "Images")
-            DockerApi.images(server, finish);
+            DockerApi.images(server, finish, unixSocketBridge);
         else if (resource === "Volumes")
-            DockerApi.volumes(server, finish);
+            DockerApi.volumes(server, finish, unixSocketBridge);
         else if (resource === "Networks")
-            DockerApi.networks(server, finish);
+            DockerApi.networks(server, finish, unixSocketBridge);
         else if (resource === "Events") {
             const now = Math.floor(Date.now() / 1000);
-            DockerApi.events(server, now - 86400, now + 1, finish);
+            DockerApi.events(server, now - 86400, now + 1, finish, unixSocketBridge);
         } else
             finish({
                 success: false,
@@ -204,7 +213,8 @@ Item {
                         kernelVersion: info.KernelVersion || "—",
                         architecture: info.Architecture || "—",
                         dockerRootDir: info.DockerRootDir || "—",
-                        dockerSocket: info.Containerd && info.Containerd.Address ? info.Containerd.Address : "—",
+                        driver: info.Driver || "—",
+                        logDriver: info.LoggingDriver || "—",
                         serverVersion: info.ServerVersion || "—"
                     });
                 } else {
@@ -212,7 +222,7 @@ Item {
                         online: false
                     });
                 }
-            });
+            }, unixSocketBridge);
             DockerApi.version(server, function (result) {
                 if (!result.success || !result.data)
                     return;
@@ -220,14 +230,14 @@ Item {
                     apiVersion: result.data.ApiVersion || "—",
                     minApiVersion: result.data.MinAPIVersion || "—"
                 });
-            });
+            }, unixSocketBridge);
             if (page.configuration.showServerImages) {
                 DockerApi.images(server, function (result) {
                     if (result.success && Array.isArray(result.data))
                         page.updateDashboardServer(serverIndex, server.url, {
                             images: String(result.data.length)
                         });
-                });
+                }, unixSocketBridge);
             } else {
                 page.updateDashboardServer(serverIndex, server.url, { images: "—" });
             }
@@ -238,7 +248,7 @@ Item {
                         page.updateDashboardServer(serverIndex, server.url, {
                             volumes: String(volumes.length)
                         });
-                });
+                }, unixSocketBridge);
             } else {
                 page.updateDashboardServer(serverIndex, server.url, { volumes: "—" });
             }
@@ -453,7 +463,7 @@ Item {
                     }
                     --activeRequests;
                     startNext();
-                });
+                }, unixSocketBridge);
             }
         };
         startNext();
@@ -507,7 +517,7 @@ Item {
                 }
             }
             page.resourceItems = updated;
-        });
+        }, unixSocketBridge);
     }
     function toggleVolumeExpanded(volume) {
         const name = volume.Name || volume.name;
@@ -535,7 +545,7 @@ Item {
                 inspect: result.success ? result.data : null,
                 inspectError: result.success ? "" : (result.error || Shared.Strings.couldNotLoadVolumeDetails)
             });
-        });
+        }, unixSocketBridge);
         DockerApi.containers(server, true, function (result) {
             if (!page.selectedServer || page.selectedServer.url !== server.url || page.selectedResource !== "Volumes")
                 return;
@@ -581,9 +591,9 @@ Item {
                 const container = containers[i];
                 DockerApi.inspectContainer(server, container.Id, function (inspectResult) {
                     finishContainer(container, inspectResult.success ? inspectResult.data : null);
-                });
+                }, unixSocketBridge);
             }
-        });
+        }, unixSocketBridge);
     }
     function updateResourceVolume(name, values) {
         const updated = page.resourceItems.slice();
@@ -618,7 +628,7 @@ Item {
                 inspect: result.success ? result.data : null,
                 inspectError: result.success ? "" : (result.error || Shared.Strings.couldNotLoadImageDetails)
             });
-        });
+        }, unixSocketBridge);
         DockerApi.imageHistory(server, image.Id, function (result) {
             if (!page.selectedServer || page.selectedServer.url !== server.url || page.selectedResource !== "Images")
                 return;
@@ -627,7 +637,7 @@ Item {
                 history: result.success && Array.isArray(result.data) ? result.data : [],
                 historyError: result.success ? "" : (result.error || Shared.Strings.couldNotLoadImageHistory)
             });
-        });
+        }, unixSocketBridge);
     }
     function updateResourceImage(id, values) {
         const updated = page.resourceItems.slice();
@@ -731,7 +741,7 @@ Item {
                 page.queueContainerStats(selectedServer, page.containers);
             } else
                 page.errorText = result.error || Shared.Strings.couldNotLoadContainers;
-        });
+        }, unixSocketBridge);
     }
     function queueContainerStats(server, containerList) {
         if (!server || page.selectedResource !== "")
@@ -779,7 +789,7 @@ Item {
                 }
                 if (page.selectedResource === "" && page.selectedServer && page.statsServer && page.selectedServer.url === page.statsServer.url && page.pendingStatsQueue.length > 0)
                     statsRefreshTimer.restart();
-            });
+            }, unixSocketBridge);
         }
     }
     function toggleExpanded(container) {
@@ -804,7 +814,7 @@ Item {
                 }
             }
             page.setContainers(updated);
-        });
+        }, unixSocketBridge);
         page.loadLogs(container.Id);
     }
     function loadLogs(id) {
@@ -824,7 +834,7 @@ Item {
                 }
             }
             page.setContainers(updated);
-        });
+        }, unixSocketBridge);
     }
     function setContainerState(container, start) {
         const server = page.selectedServer;
@@ -842,9 +852,9 @@ Item {
             }
         };
         if (start)
-            DockerApi.startContainer(server, container.Id, callback);
+            DockerApi.startContainer(server, container.Id, callback, unixSocketBridge);
         else
-            DockerApi.stopContainer(server, container.Id, callback);
+            DockerApi.stopContainer(server, container.Id, callback, unixSocketBridge);
     }
 
     Timer {
