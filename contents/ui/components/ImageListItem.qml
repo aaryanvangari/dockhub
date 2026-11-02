@@ -49,7 +49,17 @@ Item {
     }).join("\n\n")
     readonly property string imageName: {
         const tags = modelData.RepoTags || [];
-        return tags.length && tags[0] !== "<none>:<none>" ? tags[0] : String(modelData.Id || "—").replace(/^sha256:/, "").slice(0, 12);
+        const digests = modelData.RepoDigests || [];
+    
+        if (tags.length && tags[0] !== "<none>:<none>") {
+            return tags[0];
+        }
+    
+        if (digests.length) {
+            return digests[0].split("@")[0];
+        }
+    
+        return String(modelData.Id || "—").replace(/^sha256:/, "").slice(0, 12);
     }
     readonly property string shortId: String(modelData.Id || "").replace(/^sha256:/, "").slice(0, 12)
     width: ListView.view.width
@@ -482,7 +492,7 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        height: imageRow.expanded ? headingRow.height : headingRow.height + summaryRow.height
+        height: headingRow.height + summaryRow.height
         z: -1
         cursorShape: Qt.PointingHandCursor
         onClicked: controller.toggleImageExpanded(modelData)
