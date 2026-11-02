@@ -130,7 +130,7 @@ QtObject {
     readonly property string kernelVersion: i18n("Kernel")
     readonly property string architecture: i18n("Arch")
     readonly property string dockerRootDir: i18n("Root Dir")
-    readonly property string dockerSocket: i18n("Socket")
+    readonly property string logDriver: i18n("Log Driver")
     readonly property string serverVersion: i18n("Server")
     readonly property string apiVersion: i18n("API")
     readonly property string minApiVersion: i18n("Min API")

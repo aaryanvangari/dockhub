@@ -65,7 +65,7 @@ QQC2.ItemDelegate {
                         Layout.fillWidth: true
                         Layout.minimumWidth: 0
                         Layout.preferredWidth: 1
-                        Layout.horizontalStretchFactor: 4
+                        Layout.horizontalStretchFactor: 37
                         spacing: 2
                         Components.ServerMetric {
                             iconName: IconNames.operatingSystem
@@ -88,9 +88,8 @@ QQC2.ItemDelegate {
                             tooltipEnabled: true
                         }
                         Components.ServerMetric {
-                            iconName: IconNames.dockerSocket
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.dockerSocket, delegateRoot.modelData.dockerSocket)
-                            tooltipEnabled: true
+                            iconName: IconNames.driver
+                            metricText: Shared.Strings.valueLabel(Shared.Strings.driver, delegateRoot.modelData.driver)
                         }
                     }
                     ColumnLayout {
@@ -98,7 +97,7 @@ QQC2.ItemDelegate {
                         Layout.fillWidth: true
                         Layout.minimumWidth: 0
                         Layout.preferredWidth: 1
-                        Layout.horizontalStretchFactor: 3
+                        Layout.horizontalStretchFactor: 30
                         spacing: 2
                         Components.ServerMetric {
                             iconName: IconNames.serverVersion
@@ -127,7 +126,7 @@ QQC2.ItemDelegate {
                         Layout.fillWidth: true
                         Layout.minimumWidth: 0
                         Layout.preferredWidth: 1
-                        Layout.horizontalStretchFactor: 3
+                        Layout.horizontalStretchFactor: 33
                         spacing: 2
                         Components.ServerMetric {
                             iconName: IconNames.server
@@ -145,6 +144,10 @@ QQC2.ItemDelegate {
                         Components.ContainerSummaryMetric {
                             runningCount: delegateRoot.modelData.running
                             totalCount: delegateRoot.modelData.containers
+                        }
+                        Components.ServerMetric {
+                            iconName: IconNames.logDriver
+                            metricText: Shared.Strings.valueLabel(Shared.Strings.logDriver, delegateRoot.modelData.logDriver)
                         }
                     }
 
@@ -170,8 +173,8 @@ QQC2.ItemDelegate {
                             tooltipEnabled: true
                         }
                         Components.ServerMetric {
-                            iconName: IconNames.dockerSocket
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.dockerSocket, delegateRoot.modelData.dockerSocket)
+                            iconName: IconNames.memory
+                            metricText: Shared.Strings.valueLabel(Shared.Strings.totalMemory, delegateRoot.modelData.totalMemory)
                             tooltipEnabled: true
                         }
                         Components.ServerMetric {
@@ -206,9 +209,12 @@ QQC2.ItemDelegate {
                             metricText: Shared.Strings.valueLabel(Shared.Strings.nodes, delegateRoot.modelData.nodes)
                         }
                         Components.ServerMetric {
-                            iconName: IconNames.memory
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.totalMemory, delegateRoot.modelData.totalMemory)
-                            tooltipEnabled: true
+                            iconName: IconNames.driver
+                            metricText: Shared.Strings.valueLabel(Shared.Strings.driver, delegateRoot.modelData.driver)
+                        }
+                        Components.ServerMetric {
+                            iconName: IconNames.logDriver
+                            metricText: Shared.Strings.valueLabel(Shared.Strings.logDriver, delegateRoot.modelData.logDriver)
                         }
                         Components.ServerMetric {
                             visible: Plasmoid.configuration.showServerImages

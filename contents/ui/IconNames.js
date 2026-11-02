@@ -16,7 +16,7 @@ var copy = "edit-copy";
 
 var serverConnected = "network-connect";
 var serverDisconnected = "network-disconnect";
-var server = "network-server";
+var server = "network-server-symbolic";
 
 var container = "application-x-executable";
 var containerStart = "media-playback-start";
@@ -43,7 +43,8 @@ var operatingSystem = "computer";
 var kernelVersion = "system-run";
 var architecture = "cpu";
 var dockerRootDir = "folder-root";
-var dockerSocket = "network-server";
+var driver = "speedometer";
+var logDriver = "speedometer";
 var serverVersion = "help-about";
 var apiVersion = "help-about";
 var minApiVersion = "help-about";
@@ -51,3 +52,4 @@ var memory = "memory";
 var size = "transform-scale";
 var blockIo = "drive-harddisk";
 var ports = "kdeconnect-tray";
+var scope = "zoom"

@@ -29,7 +29,8 @@ Item {
         case "images": return IconNames.image;
         case "volumes": return IconNames.volume;
         case "rootDir": return IconNames.dockerRootDir;
-        case "socket": return IconNames.dockerSocket;
+        case "driver": return IconNames.driver;
+        case "logDriver": return IconNames.logDriver;
         case "server": return IconNames.serverVersion;
         case "api": return IconNames.apiVersion;
         case "minApi": return IconNames.minApiVersion;
@@ -50,7 +51,8 @@ Item {
         case "images": label = Shared.Strings.images; value = serverData.images; break;
         case "volumes": label = Shared.Strings.volumes; value = serverData.volumes; break;
         case "rootDir": label = Shared.Strings.dockerRootDir; value = serverData.dockerRootDir; break;
-        case "socket": label = Shared.Strings.dockerSocket; value = serverData.dockerSocket; break;
+        case "driver": label = Shared.Strings.driver; value = serverData.driver; break;
+        case "driver": label = Shared.Strings.logDriver; value = serverData.logDriver; break;
         case "server": label = Shared.Strings.serverVersion; value = serverData.serverVersion; break;
         case "api": label = Shared.Strings.apiVersion; value = serverData.apiVersion; break;
         case "minApi": label = Shared.Strings.minApiVersion; value = serverData.minApiVersion; break;
