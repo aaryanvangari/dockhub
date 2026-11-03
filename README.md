@@ -2,6 +2,15 @@
 
 DockHub is a KDE Plasma applet for managing multiple Docker server instances from a single desktop dashboard. It lets you connect to local and remote Docker daemons, monitor containers, images, networks and volumes, and view Docker events directly from your desktop.
 
+## Screenshots
+
+<p align="center">
+  <img src="contents/screenshots/Servers_2_column.png" alt="DockHub - Server Details 2" width="400">
+  <img src="contents/screenshots/Server_Dashboard.png" alt="DockHub - Servers" width="400">
+  <img src="contents/screenshots/Container_Expanded.png" alt="DockHub - Container Expanded" width="400">
+  <img src="contents/screenshots/Image_Expanded.png" alt="DockHub - Image Expanded" width="400">
+</p>
+
 ## Features
 
 ### Multi-Server Support
@@ -41,6 +50,26 @@ DockHub is a KDE Plasma applet for managing multiple Docker server instances fro
 - Choose which metrics appear in server overview cards.
 - Configure the resource usage statistics refresh interval.
 - Select which resource pages to display, including stacks, images, networks, volumes and events.
+
+## Download and Installation
+
+### Download
+
+Get the latest stable DockHub release from GitHub:
+
+**[Download DockHub — Latest Release](https://github.com/aaryanvangari/dockhub/releases/latest)**
+
+Download the `.deb` package for your system from the latest release assets.
+
+### Install
+
+On Debian or Ubuntu-based distributions, install the downloaded package using:
+
+```bash
+sudo apt install ./dockhub_*_amd64.deb
+```
+
+After installation, open Plasma's widget browser, search for **DockHub**, and add it to your desktop or panel.
 
 ## Docker Connection Methods
 
@@ -143,7 +172,7 @@ Copying only the `contents` directory is not sufficient when the native plugin h
 4. Click **Add Server**.
 5. Configure the server:
 
-   - **Name:** A friendly name for the server (e.g. `Production`, `Development` or `Shire`).
+   - **Name:** A friendly name for the server (e.g. `Production`, `Development`).
    - **Connection Type:** Select the appropriate connection method.
    - **Host URL / Socket Path:** Enter the Docker API endpoint or local Unix socket path, depending on the selected connection type.
    - **Enabled:** Enable or disable the server.
@@ -247,9 +276,11 @@ ls -l "$XDG_RUNTIME_DIR/docker.sock"
 - Ensure the server is enabled.
 - Refresh the dashboard.
 
-## Screenshots
+### Check the logs
 
-*Coming soon.*
+```bash
+journalctl --user -f -o cat _COMM=plasmashell | grep --line-buffered 'DockHub'
+```
 
 ## License
 
