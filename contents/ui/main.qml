@@ -1,5 +1,3 @@
-pragma ComponentBehavior: Bound
-
 import QtQuick
 import "shared" as Shared
 import "IconNames.js" as IconNames
