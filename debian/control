@@ -1,0 +1,25 @@
+Source: dockhub
+Section: kde
+Priority: optional
+Maintainer: Aaryan Vangari <aaryanvangari@gmail.com>
+Build-Depends:
+ debhelper-compat (= 13),
+ cmake,
+ extra-cmake-modules,
+ qt6-base-dev,
+ qt6-declarative-dev,
+ libplasma-dev
+Standards-Version: 4.7.2
+Rules-Requires-Root: no
+
+Package: dockhub
+Architecture: amd64
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+ plasma-workspace
+Description: DockHub is a KDE Plasma applet for managing multiple
+ Docker server instances from a single desktop dashboard.
+ It lets you connect to local and remote Docker daemons, monitor
+ containers, images, networks and volumes, and view Docker events
+ directly from your desktop.

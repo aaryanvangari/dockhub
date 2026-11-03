@@ -1,0 +1,5 @@
+dockhub (1.0.0-1) unstable; urgency=medium
+
+  * Initial Debian package release.
+
+ -- Aaryan Vangari <aaryanvangari@gmail.com>  Mon, 3 Nov 2026 05:50:00 +0530
