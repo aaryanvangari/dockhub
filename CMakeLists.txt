@@ -6,27 +6,29 @@ find_package(ECM REQUIRED NO_MODULE)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} ${CMAKE_MODULE_PATH})
 
 find_package(Plasma REQUIRED)
+find_package(Qt6 REQUIRED COMPONENTS Core Qml)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-find_package(Qt6 REQUIRED COMPONENTS Core Qml)
 
 qt_standard_project_setup()
 
 set(KDE_INSTALL_USE_QT_SYS_PATHS TRUE)
 include(KDEInstallDirs6)
 
-if(CMAKE_INSTALL_PREFIX STREQUAL "/usr")
-    set(DOCKHUB_QML_INSTALL_DIR "${KDE_INSTALL_QMLDIR}")
-else()
-    set(DOCKHUB_QML_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}${KDE_INSTALL_QMLDIR}")
-endif()
+# Keep the existing Qt resource behavior for the QML module.
+qt_policy(SET QTP0001 OLD)
 
+# ---------------------------------------------------------------------------
+# Plasma package
+# ---------------------------------------------------------------------------
+
+set(DOCKHUB_PACKAGE_ID "com.opensquares.dockhub")
 set(DOCKHUB_PACKAGE_DIR "${CMAKE_CURRENT_BINARY_DIR}/package")
 
-file(MAKE_DIRECTORY "${DOCKHUB_PACKAGE_DIR}/contents")
-
+# Recreate the staging package to prevent stale files.
+file(REMOVE_RECURSE "${DOCKHUB_PACKAGE_DIR}")
+file(MAKE_DIRECTORY "${DOCKHUB_PACKAGE_DIR}")
 
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/metadata.json"
@@ -34,43 +36,33 @@ configure_file(
     COPYONLY
 )
 
-file(GLOB DOCKHUB_UI_FILES
-    "${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/*.qml"
-    "${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/*.js"
-)
-
-file(COPY ${DOCKHUB_UI_FILES}
-    DESTINATION "${DOCKHUB_PACKAGE_DIR}/contents/ui"
-)
-
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/contents/screenshot.png"
-    "${DOCKHUB_PACKAGE_DIR}/contents/screenshot.png"
-    COPYONLY
-)
-
+# Copy the complete contents directory, excluding the generated QML module.
+# The generated module is built separately below.
 file(COPY
-    "${CMAKE_CURRENT_SOURCE_DIR}/contents/screenshots"
+    "${CMAKE_CURRENT_SOURCE_DIR}/contents/"
     DESTINATION "${DOCKHUB_PACKAGE_DIR}/contents"
-)
-
-file(COPY
-    "${CMAKE_CURRENT_SOURCE_DIR}/contents/config"
-    DESTINATION "${DOCKHUB_PACKAGE_DIR}/contents"
+    PATTERN "screenshots" EXCLUDE
+    PATTERN "OpenSquares" EXCLUDE
 )
 
 plasma_install_package(
     "${DOCKHUB_PACKAGE_DIR}"
-    "com.opensquares.dockhub"
+    "${DOCKHUB_PACKAGE_ID}"
 )
 
-qt_policy(SET QTP0001 OLD)
+# ---------------------------------------------------------------------------
+# Native QML module
+# ---------------------------------------------------------------------------
 
+set(DOCKHUB_QML_MODULE_DIR
+    "${CMAKE_CURRENT_BINARY_DIR}/contents/ui/OpenSquares/DockHub"
+)
 
 qt_add_qml_module(dockhub
     URI OpenSquares.DockHub
     VERSION 1.0
-    OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/contents/ui/OpenSquares/DockHub"
+    OUTPUT_DIRECTORY "${DOCKHUB_QML_MODULE_DIR}"
+
     SOURCES
         src/UnixSocketBridge.h
         src/UnixSocketBridge.cpp
@@ -87,23 +79,21 @@ target_link_libraries(dockhub
         Qt6::Qml
 )
 
+# The plugin and its backing library are installed side by side.
 set_target_properties(dockhubplugin PROPERTIES
     INSTALL_RPATH "$ORIGIN"
 )
 
+# Install both libraries into the Qt QML import directory.
 install(
-    TARGETS dockhub
-    LIBRARY DESTINATION "${DOCKHUB_QML_INSTALL_DIR}/OpenSquares/DockHub"
+    TARGETS dockhub dockhubplugin
+    LIBRARY DESTINATION "${KDE_INSTALL_QMLDIR}/OpenSquares/DockHub"
 )
 
+# Install the generated QML module metadata.
 install(
-    TARGETS dockhubplugin
-    LIBRARY DESTINATION "${DOCKHUB_QML_INSTALL_DIR}/OpenSquares/DockHub"
-)
-
-install(
-    DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/contents/ui/OpenSquares/DockHub/"
-    DESTINATION "${DOCKHUB_QML_INSTALL_DIR}/OpenSquares/DockHub"
+    DIRECTORY "${DOCKHUB_QML_MODULE_DIR}/"
+    DESTINATION "${KDE_INSTALL_QMLDIR}/OpenSquares/DockHub"
     FILES_MATCHING
         PATTERN "qmldir"
         PATTERN "*.qmltypes"
