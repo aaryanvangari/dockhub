@@ -10,7 +10,7 @@ QtObject {
     readonly property string servers: i18n("Servers")
     readonly property string backToServer: i18n("Back to server")
     readonly property string backToServers: i18n("Back to servers")
-    readonly property string dockhub: i18n("Dockhub")
+    readonly property string dockhub: i18n("DockHub")
     readonly property string refresh: i18n("Refresh")
     readonly property string settings: i18n("Settings")
     readonly property string noEnabledServersConfiguredOpenSettingsToAddOne: i18n("No enabled servers configured. Open Settings to add one.")
