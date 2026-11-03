@@ -1,4 +1,4 @@
-dockhub (1.0.0-1) unstable; urgency=medium
+dockhub (1.0.0-1~test1) unstable; urgency=medium
 
   * Initial Debian package release.
 
