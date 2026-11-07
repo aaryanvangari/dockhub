@@ -33,6 +33,7 @@ var volume = "disk-quota";
 var image = "kpackagekit-updates";
 var network = "network-wired-activated";
 var networkWired = "network-wired";
+var logs = "text-x-log";
 var events = "view-history";
 var tag = "tag";
 
