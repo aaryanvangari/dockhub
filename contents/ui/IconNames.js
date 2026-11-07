@@ -53,3 +53,5 @@ var size = "transform-scale";
 var blockIo = "drive-harddisk";
 var ports = "kdeconnect-tray";
 var scope = "zoom"
+var play = "media-playback-start"
+var stop = "media-playback-stop"

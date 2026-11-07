@@ -207,6 +207,245 @@ function containerLogs(server, id, callback, unixSocketBridge) {
     }, unixSocketBridge);
 }
 
+function startContainerLogStream(server, id, onNewEntry, unixSocketBridge) {
+    if (!server || !id) {
+        console.error("[DockHub] startContainerLogStream: missing server or container ID");
+        return null;
+    }
+
+    const requestId = "logstream-" + id + "-" + Date.now();
+
+    const streamParams = {
+        stdout: 1,
+        stderr: 1,
+        follow: 1,
+        timestamps: 1,
+        tail: "all"
+    };
+
+    const result = unixSocketBridge.startStreamingRequest(
+        server.url,
+        "GET",
+        "/containers/" + encodeURIComponent(id) + "/logs?" +
+            "stdout=" + streamParams.stdout +
+            "&stderr=" + streamParams.stderr +
+            "&follow=" + streamParams.follow +
+            "&timestamps=" + streamParams.timestamps +
+            "&tail=" + streamParams.tail,
+        null,
+        requestId
+    );
+
+    // Store the requestId for later cleanup
+    activeLogStreams[id] = result;
+
+    if (!result || result.length === 0) {
+        console.error("[DockHub] startContainerLogStream: failed to start stream for container " + id);
+        delete activeLogStreams[id];
+        return null;
+    }
+
+    // Handle streamingData signal
+    unixSocketBridge.streamingData.connect(function (streamRequestId, data) {
+        if (streamRequestId !== requestId) {
+            return;
+        }
+
+        // Parse the log data using inline Docker log parser
+        try {
+            const parsed = parseLogChunk(data, pendingLine, pendingFrame);
+            for (let i = 0; i < parsed.entries.length; ++i) {
+                const entry = parsed.entries[i];
+                if (entry.timestamp !== null) {
+                    onNewEntry(entry.timestamp, entry.stream, entry.message);
+                } else {
+                    onNewEntry(null, entry.stream, entry.message);
+                }
+            }
+            pendingLine = parsed.pendingLine;
+            pendingFrame = parsed.pendingFrame;
+        } catch (error) {
+            console.error("[DockHub] Error parsing log data:", error);
+        }
+    });
+
+    // Handle streamingFinished signal
+    unixSocketBridge.streamingFinished.connect(function (streamRequestId, result) {
+        if (streamRequestId !== requestId) {
+            return;
+        }
+        unixSocketBridge.streamingData.disconnect(function () {});
+        unixSocketBridge.streamingFinished.disconnect(function () {});
+        console.log("[DockHub] Log stream ended for container " + id + ":", result.error || "Normal completion");
+        delete activeLogStreams[id];
+    });
+
+    return requestId;
+}
+
+// Map of active log streams: key = container id, value = requestId
+var activeLogStreams = {};
+
+function stopContainerLogStream(server, id, unixSocketBridge) {
+    if (!server || !id) {
+        console.error("[DockHub] stopContainerLogStream: missing server or container ID");
+        return;
+    }
+
+    const requestId = activeLogStreams[id];
+    if (!requestId) {
+        console.warn("[DockHub] stopContainerLogStream: no active stream found for container " + id);
+        return;
+    }
+    delete activeLogStreams[id];
+    unixSocketBridge.stopStreamingRequest(requestId);
+}
+
+// State for incremental parsing across chunks
+
+// Accumulates incomplete lines across chunks, yielding complete lines
+// when a newline is received or when a frame boundary is reached.
+function parseLines(input, currentLineBuffer, frameState) {
+    var output = [];
+
+    var offset = 0;
+    while (offset < input.length) {
+        var byte = input.charCodeAt(offset);
+
+        // Check for frame header start (first byte 0-2)
+        if (byte <= 2 && frameState && frameState.bytes.length === 0) {
+            // Save any incomplete line before processing frame
+            if (currentLineBuffer.length > 0) {
+                output.push({
+                    line: currentLineBuffer,
+                    frameState: frameState
+                });
+                currentLineBuffer = "";
+            }
+
+            // Read 8-byte multiplexed header
+            if (offset + 8 > input.length) {
+                // Frame header is incomplete; save for next chunk
+                frameState = {
+                    bytes: input.slice(offset),
+                    position: offset + 8,
+                    stream: null
+                };
+                break;
+            }
+
+            var length = input.charCodeAt(offset + 4) * 16777216 +
+                         input.charCodeAt(offset + 5) * 65536 +
+                         input.charCodeAt(offset + 6) * 256 +
+                         input.charCodeAt(offset + 7);
+
+            var streamType = input.charCodeAt(offset + 2);
+            var stream = (streamType === 1) ? "stdout" :
+                         (streamType === 2) ? "stderr" : null;
+
+            if (length === 0) {
+                // Empty frame - just a newline in the stream
+                output.push({
+                    timestamp: null,
+                    stream: stream || "unknown",
+                    message: "\n"
+                });
+                offset += 8;
+                continue;
+            }
+
+            // Save any incomplete line before the frame
+            if (currentLineBuffer.length > 0) {
+                output.push({
+                    line: currentLineBuffer,
+                    frameState: {
+                        bytes: input.slice(offset + 8),
+                        position: offset + 8 + length,
+                        stream: stream
+                    }
+                });
+                currentLineBuffer = "";
+            }
+
+            // Check if we have enough data for the full frame
+            if (offset + 8 + length > input.length) {
+                // Frame payload is incomplete; save for next chunk
+                frameState = {
+                    bytes: input.slice(offset + 8),
+                    position: offset + 8 + length,
+                    stream: stream
+                };
+                break;
+            }
+
+            // Extract the frame payload
+            var payload = input.slice(offset + 8, offset + 8 + length);
+
+            // Parse the payload into lines
+            var lines = payload.split(/\r?\n/);
+            var lastLine = lines.pop();
+
+            for (var i = 0; i < lines.length; ++i) {
+                var line = lines[i];
+                if (line.length > 0) {
+                    output.push({
+                        timestamp: null,
+                        stream: stream || "unknown",
+                        message: line
+                    });
+                }
+            }
+
+            // If the last line doesn't end with newline, buffer it
+            if (lastLine.length > 0) {
+                currentLineBuffer = lastLine;
+            }
+
+            offset += 8 + length;
+            continue;
+        }
+
+        // Normal text character - append to current line buffer
+        currentLineBuffer += String.fromCharCode(byte);
+
+        // Check for line break
+        if (currentLineBuffer.lastIndexOf('\n') >= 0 ||
+            currentLineBuffer.lastIndexOf('\r') >= 0) {
+            var line = currentLineBuffer.slice(0, -1);
+            if (line.length > 0) {
+                output.push({
+                    timestamp: null,
+                    stream: (frameState && frameState.stream) ? frameState.stream : "unknown",
+                    message: line
+                });
+            }
+            currentLineBuffer = currentLineBuffer.slice(-1);
+        }
+
+        ++offset;
+    }
+
+    // Return remaining buffer and frame state
+    return {
+        output: output,
+        currentLineBuffer: currentLineBuffer,
+        frameState: frameState
+    };
+}
+
+// Parses a chunk of incoming log data, returning complete log entries.
+function parseLogChunk(chunk, pendingLine, pendingFrame) {
+    var result = parseLines(chunk, pendingLine || "", pendingFrame || null);
+    return {
+        entries: result.output,
+        pendingLine: result.currentLineBuffer,
+        pendingFrame: result.frameState
+    };
+}
+
+var pendingLine = "";
+var pendingFrame = null;
+
 // ------------------------------------------------------------------
 // Images
 // ------------------------------------------------------------------

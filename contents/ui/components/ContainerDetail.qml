@@ -470,13 +470,152 @@ ColumnLayout {
                 }
             }
 
-            PlasmaComponents.Label {
+            Column {
                 visible: controller.detailTab === 1
                 width: parent.width
-                text: modelData.logs || Shared.Strings.loadingLogs
-                font.family: "monospace"
-                wrapMode: Text.WrapAnywhere
-                verticalAlignment: Text.AlignTop
+                spacing: 8
+
+                Rectangle {
+                    width: parent.width
+                    height: logModelBar.implicitHeight + 12
+                    radius: 7
+                    color: Kirigami.Theme.backgroundColor
+                    Column {
+                        id: logModelBar
+                        x: 10
+                        y: 10
+                        width: parent.width - 20
+                        height: 24
+                        spacing: 6
+                        Row {
+                            Kirigami.Icon {
+                                source: IconNames.console
+                                Layout.preferredWidth: 20
+                                Layout.preferredHeight: 20
+                            }
+                            PlasmaComponents.Label {
+                                text: Shared.Strings.logs
+                                font.bold: true
+                            }
+                            PlasmaComponents.ToolButton {
+                                icon.name: IconNames.refresh
+                                display: QQC2.AbstractButton.IconOnly
+                                QQC2.ToolTip.text: Shared.Strings.refreshLogs
+                                QQC2.ToolTip.visible: hovered
+                                onClicked: {
+                                    controller.stopLogStream(modelData);
+                                    controller.loadLogs(modelData.Id);
+                                }
+                            }
+                            PlasmaComponents.ToolButton {
+                                icon.name: IconNames.play
+                                display: QQC2.AbstractButton.IconOnly
+                                QQC2.ToolTip.text: Shared.Strings.startLiveLogs
+                                QQC2.ToolTip.visible: hovered
+                                visible: controller.expandedId === modelData.Id
+                                onClicked: {
+                                    controller.startLogStream(modelData);
+                                }
+                            }
+                            PlasmaComponents.ToolButton {
+                                icon.name: IconNames.stop
+                                display: QQC2.AbstractButton.IconOnly
+                                QQC2.ToolTip.text: Shared.Strings.stopLiveLogs
+                                QQC2.ToolTip.visible: hovered
+                                visible: controller.expandedId === modelData.Id
+                                onClicked: {
+                                    controller.stopLogStream(modelData);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    visible: controller.detailTab === 1 && modelData.logModel
+                    width: parent.width
+                    Layout.fillHeight: true
+                    radius: 7
+                    color: Kirigami.Theme.alternateBackgroundColor
+                    Column {
+                        id: logEntries
+                        x: 10
+                        y: 10
+                        width: parent.width - 20
+                        spacing: 2
+                        Repeater {
+                            model: modelData.logModel ? modelData.logModel.entries : []
+                            delegate: Row {
+                                required property var modelData
+                                width: logEntries.width
+                                height: 24
+                                spacing: 8
+                                Item {
+                                    width: 24
+                                    height: parent.height
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        anchors.margins: 2
+                                        radius: 3
+                                        color: modelData.stream === "stdout"
+                                            ? "#4ec9b040"
+                                            : (modelData.stream === "stderr"
+                                                ? "#e83e8c40"
+                                                : "#6c757d40")
+                                        Kirigami.Icon {
+                                            source: modelData.stream === "stdout"
+                                                ? IconNames.message
+                                                : (modelData.stream === "stderr"
+                                                    ? IconNames.warning
+                                                    : IconNames.message)
+                                            width: 16
+                                            height: 16
+                                            color: modelData.stream === "stdout"
+                                                ? "#4ec9b0"
+                                                : (modelData.stream === "stderr"
+                                                    ? "#e83e8c"
+                                                    : "#6c757d")
+                                        }
+                                    }
+                                }
+                                PlasmaComponents.Label {
+                                    width: (logEntries.width - 32) / 2
+                                    text: modelData.message
+                                    font.family: "monospace"
+                                    font.pixelSize: 11
+                                    wrapMode: Text.WrapAnywhere
+                                    verticalAlignment: Text.AlignTop
+                                    color: modelData.stream === "stderr"
+                                        ? "#e83e8c"
+                                        : "#212529"
+                                }
+                                Item {
+                                    width: (logEntries.width - 32) / 2
+                                    height: parent.height
+                                    PlasmaComponents.Label {
+                                        anchors.fill: parent
+                                        anchors.margins: 2
+                                        text: modelData.timestamp
+                                            ? controller.formatTimestamp(modelData.timestamp)
+                                            : ""
+                                        font.family: "monospace"
+                                        font.pixelSize: 9
+                                        font.bold: true
+                                        color: "#6c757d"
+                                    }
+                                }
+                            }
+                        }
+                        PlasmaComponents.Label {
+                            visible: !modelData.logModel || (modelData.logModel.entries.length === 0)
+                            text: Shared.Strings.noLogsAvailable
+                            font.family: "monospace"
+                            font.pixelSize: 12
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                    }
+                }
             }
         }
     }

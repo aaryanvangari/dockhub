@@ -4,6 +4,7 @@ import QtQuick
 import "../shared" as Shared
 import "../DockerApi.js" as DockerApi
 import "ContainerData.js" as ContainerData
+import "LogModel.js" as LogModel
 
 Item {
     id: page
@@ -51,6 +52,8 @@ Item {
     property string expandedVolumeName: ""
     property string expandedImageId: ""
     property string expandedStackName: ""
+    property var activeLogStreams: ({})
+    property var logStreamTimers: ({})
 
     function loadServers() {
         try {
@@ -729,7 +732,8 @@ Item {
                         stats: previous ? previous.stats : null,
                         inspect: previous ? previous.inspect : null,
                         inspectLoading: previous ? previous.inspectLoading : false,
-                        logs: previous ? previous.logs : ""
+                        logs: previous ? previous.logs : "",
+                        logModel: previous ? previous.logModel : LogModel.createLogModel(1000, true)
                     });
                 }));
                 if (page.containerSearchQuery.trim() !== "")
@@ -836,6 +840,63 @@ Item {
             page.setContainers(updated);
         }, unixSocketBridge);
     }
+
+    function startLogStream(container) {
+        const requestId = DockerApi.startContainerLogStream(
+            page.selectedServer,
+            container.Id,
+            function (timestamp, stream, message) {
+                // Directly add to the container's log model
+                handleLogModelMessage({
+                    type: "logEntry",
+                    entry: {
+                        Id: container.Id,
+                        timestamp: timestamp,
+                        stream: stream,
+                        message: message
+                    }
+                });
+            },
+            unixSocketBridge
+        );
+        if (requestId) {
+            page.activeLogStreams[container.Id] = requestId;
+        }
+    }
+
+    function stopLogStream(container) {
+        const requestId = page.activeLogStreams[container.Id];
+        if (requestId) {
+            DockerApi.stopContainerLogStream(
+                page.selectedServer,
+                container.Id,
+                unixSocketBridge
+            );
+            delete page.activeLogStreams[container.Id];
+        }
+    }
+
+    // Handle messages from LogModel
+    function handleLogModelMessage(message) {
+        if (message.type === "logEntry") {
+            // Find the container with the matching ID
+            for (let i = 0; i < page.containers.length; ++i) {
+                const container = page.containers[i];
+                if (container && container.Id === message.entry.Id) {
+                    // Add the entry to the container's log model
+                    if (container.logModel) {
+                        container.logModel.appendEntry(
+                            message.entry.timestamp,
+                            message.entry.stream,
+                            message.entry.message
+                        );
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
     function setContainerState(container, start) {
         const server = page.selectedServer;
         if (!server)

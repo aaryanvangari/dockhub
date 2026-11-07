@@ -145,6 +145,10 @@ QtObject {
     readonly property string found: i18n("found")
     readonly property string of: i18n("of")
     readonly property string page: i18n("Page")
+    readonly property string refreshLogs: i18n("Refresh logs")
+    readonly property string startLiveLogs: i18n("Start live logs")
+    readonly property string stopLiveLogs: i18n("Stop live logs")
+    readonly property string noLogsAvailable: i18n("No logs available")
 
     function valueLabel(label, value) {
         return label + ": " + String(value);
