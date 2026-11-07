@@ -11,8 +11,11 @@
 #include <QRegularExpression>
 #include <QTimer>
 #include <QVariantMap>
-
-// #include <limits>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
+#include <QUrl>
+#include <QSharedPointer>
 
 namespace {
 
@@ -362,7 +365,9 @@ public:
 // UnixSocketBridge
 // ============================================================================
 
-UnixSocketBridge::UnixSocketBridge(QObject *parent) : QObject(parent) {}
+UnixSocketBridge::UnixSocketBridge(QObject *parent)
+    : QObject(parent)
+    , m_networkAccessManager(new QNetworkAccessManager(this)) {}
 
 UnixSocketBridge::~UnixSocketBridge() {
   const auto states = m_activeStreamingRequests.values();
@@ -812,7 +817,10 @@ QString UnixSocketBridge::startStreamingRequest(const QString &socketPath,
               }
 
               // Emit only actual response body bytes.
-              emit streamingData(requestId, chunk);
+              emit streamingData(
+                  requestId,
+                  QString::fromLatin1(chunk.constData(), chunk.size())
+              );
 
               if (state->finished)
                 return;
@@ -930,7 +938,10 @@ QString UnixSocketBridge::startStreamingRequest(const QString &socketPath,
             state->bodyBuffer.remove(0, amount);
             state->receivedLength += amount;
 
-            emit streamingData(requestId, data);
+            emit streamingData(
+                requestId,
+                QString::fromLatin1(data.constData(), data.size())
+            );
 
             if (state->finished)
               return;
@@ -959,7 +970,10 @@ QString UnixSocketBridge::startStreamingRequest(const QString &socketPath,
 
           state->receivedLength += data.size();
 
-          emit streamingData(requestId, data);
+          emit streamingData(
+              requestId,
+              QString::fromLatin1(data.constData(), data.size())
+          );
         }
       });
 
@@ -1034,23 +1048,259 @@ QString UnixSocketBridge::startStreamingRequest(const QString &socketPath,
 // ============================================================================
 // Stop streaming request
 // ============================================================================
+void UnixSocketBridge::stopStreamingRequest(const QString &requestId)
+{
+    // Stop HTTP/HTTPS stream, if present.
+    auto httpReply = m_activeHttpStreamingRequests.take(requestId);
 
-void UnixSocketBridge::stopStreamingRequest(const QString &requestId) {
-  StreamingRequestState *state = m_activeStreamingRequests.take(requestId);
+    if (httpReply) {
+        httpReply->abort();
+        httpReply->deleteLater();
+    }
 
-  if (!state)
-    return;
+    // Stop Unix-socket stream, if present.
+    auto *state = m_activeStreamingRequests.take(requestId);
 
-  if (state->finished)
-    return;
+    if (!state)
+        return;
 
-  state->finished = true;
+    state->finished = true;
 
-  if (state->connectionTimer)
-    state->connectionTimer->stop();
+    if (state->socket) {
+        state->socket->abort();
+        state->socket->deleteLater();
+    }
+}
 
-  if (state->socket)
-    state->socket->abort();
 
-  state->deleteLater();
+// ============================================================================
+// Start HTTP streaming request
+// ============================================================================
+
+QString UnixSocketBridge::startHttpStreamingRequest(
+    const QString &url,
+    const QString &requestId)
+{
+    auto finishImmediately = [this, &requestId](const QVariantMap &result) {
+        QMetaObject::invokeMethod(this, [this, requestId, result] {
+            emit streamingFinished(requestId, result);
+        }, Qt::QueuedConnection);
+    };
+
+    if (requestId.isEmpty()) {
+        finishImmediately({
+            {"success", false},
+            {"status", 0},
+            {"data", QVariant()},
+            {"error", QStringLiteral("Request ID must not be empty")}
+        });
+        return {};
+    }
+
+    const QUrl requestUrl(url);
+
+    if (!requestUrl.isValid() ||
+        (requestUrl.scheme() != QStringLiteral("http") &&
+         requestUrl.scheme() != QStringLiteral("https")) ||
+        requestUrl.host().isEmpty()) {
+
+        finishImmediately({
+            {"success", false},
+            {"status", 0},
+            {"data", QVariant()},
+            {"error", QStringLiteral("Invalid HTTP streaming URL")}
+        });
+        return {};
+    }
+
+    // Replace an existing HTTP stream with the same ID.
+    stopStreamingRequest(requestId);
+
+    QNetworkRequest request(requestUrl);
+    request.setRawHeader("Accept", "application/vnd.docker.raw-stream");
+
+    auto *reply = m_networkAccessManager->get(request);
+
+    m_activeHttpStreamingRequests.insert(requestId, reply);
+
+    struct StreamState {
+        bool responseAccepted = false;
+        bool completed = false;
+        QByteArray errorBody;
+        QPointer<QTimer> connectionTimer;
+    };
+
+    const auto state = QSharedPointer<StreamState>::create();
+
+    // Only time out the initial connection/response headers.
+    // An established log stream must not have a total-duration timeout.
+    auto *connectionTimer = new QTimer(reply);
+    connectionTimer->setSingleShot(true);
+    state->connectionTimer = connectionTimer;
+
+    auto finish = [this, requestId, reply, state](const QVariantMap &result) {
+        if (state->completed)
+            return;
+
+        state->completed = true;
+
+        if (state->connectionTimer)
+            state->connectionTimer->stop();
+
+        if (m_activeHttpStreamingRequests.value(requestId) == reply)
+            m_activeHttpStreamingRequests.remove(requestId);
+
+        emit streamingFinished(requestId, result);
+
+        reply->deleteLater();
+    };
+
+    auto checkResponse = [reply, state, finish]() {
+        if (state->responseAccepted || state->completed)
+            return;
+
+        const QVariant statusValue =
+            reply->attribute(QNetworkRequest::HttpStatusCodeAttribute);
+
+        if (!statusValue.isValid())
+            return;
+
+        const int status = statusValue.toInt();
+
+        if (status >= 200 && status < 300) {
+            state->responseAccepted = true;
+
+            if (state->connectionTimer)
+                state->connectionTimer->stop();
+
+            return;
+        }
+
+        // An HTTP error response is not a Docker log stream.
+        // Its body is collected and reported when the reply finishes.
+    };
+
+    connect(connectionTimer, &QTimer::timeout, this,
+            [this, requestId, reply, finish]() {
+        if (m_activeHttpStreamingRequests.value(requestId) != reply)
+            return;
+
+        finish({
+            {"success", false},
+            {"status", 0},
+            {"data", QVariant()},
+            {"error", QStringLiteral("HTTP streaming connection timed out")}
+        });
+
+        reply->abort();
+    });
+
+    connect(reply, &QNetworkReply::metaDataChanged,
+            this, checkResponse);
+
+    connect(reply, &QIODevice::readyRead, this,
+            [this, requestId, reply, state, checkResponse]() {
+        if (state->completed)
+            return;
+
+        checkResponse();
+
+        const QByteArray data = reply->readAll();
+
+        if (data.isEmpty())
+            return;
+
+        if (state->responseAccepted) {
+            emit streamingData(
+                requestId,
+                QString::fromLatin1(data.constData(), data.size())
+            );
+        } else {
+            // Keep HTTP error bodies bounded.
+            constexpr qsizetype MaxErrorBodyBytes = 1024 * 1024;
+
+            const qsizetype remaining =
+                MaxErrorBodyBytes - state->errorBody.size();
+
+            if (remaining > 0)
+                state->errorBody.append(data.left(remaining));
+        }
+    });
+
+    connect(reply, &QNetworkReply::finished, this,
+            [this, requestId, reply, state, finish, checkResponse]() {
+        if (state->completed)
+            return;
+
+        checkResponse();
+
+        // Drain any remaining bytes.
+        const QByteArray remaining = reply->readAll();
+
+        if (state->responseAccepted) {
+            if (!remaining.isEmpty())
+                emit streamingData(
+                    requestId,
+                    QString::fromLatin1(remaining.constData(), remaining.size())
+                );
+
+            const int status =
+                reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+
+            finish({
+                {"success", status >= 200 && status < 300},
+                {"status", status},
+                {"data", QVariant()},
+                {"error", QString()}
+            });
+
+            return;
+        }
+
+        if (!remaining.isEmpty()) {
+            constexpr qsizetype MaxErrorBodyBytes = 1024 * 1024;
+
+            const qsizetype available =
+                MaxErrorBodyBytes - state->errorBody.size();
+
+            if (available > 0)
+                state->errorBody.append(remaining.left(available));
+        }
+
+        const int status =
+            reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+
+        QString error = reply->errorString();
+
+        QJsonParseError jsonError;
+        const QJsonDocument document =
+            QJsonDocument::fromJson(state->errorBody, &jsonError);
+
+        if (jsonError.error == QJsonParseError::NoError &&
+            document.isObject()) {
+
+            const QString message =
+                document.object().value(QStringLiteral("message")).toString();
+
+            if (!message.isEmpty())
+                error = message;
+        }
+
+        if (status > 0)
+            error = QStringLiteral("HTTP %1: %2").arg(status).arg(error);
+
+        finish({
+            {"success", false},
+            {"status", status},
+            {"data", QString::fromUtf8(state->errorBody)},
+            {"error", error}
+        });
+    });
+
+    connectionTimer->start(10000);
+
+    qDebug().noquote()
+        << "[DockHub HTTP] Starting log stream:" << requestUrl.toString();
+
+    return requestId;
 }

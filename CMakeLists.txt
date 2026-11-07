@@ -6,7 +6,7 @@ find_package(ECM REQUIRED NO_MODULE)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} ${CMAKE_MODULE_PATH})
 
 find_package(Plasma REQUIRED)
-find_package(Qt6 REQUIRED COMPONENTS Core Qml)
+find_package(Qt6 REQUIRED COMPONENTS Core Qml Network)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -77,6 +77,7 @@ target_link_libraries(dockhub
     PRIVATE
         Qt6::Core
         Qt6::Qml
+        Qt6::Network
 )
 
 # The plugin and its backing library are installed side by side.

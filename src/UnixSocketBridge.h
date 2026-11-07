@@ -2,6 +2,7 @@
 
 #include <QByteArray>
 #include <QHash>
+#include <QPointer>
 #include <QObject>
 #include <QString>
 #include <QVariant>
@@ -9,6 +10,8 @@
 #include <QtQml/qqmlregistration.h>
 
 class StreamingRequestState;
+class QNetworkAccessManager;
+class QNetworkReply;
 
 class UnixSocketBridge : public QObject {
   Q_OBJECT
@@ -17,6 +20,11 @@ class UnixSocketBridge : public QObject {
 public:
   explicit UnixSocketBridge(QObject *parent = nullptr);
   ~UnixSocketBridge() override;
+
+  // Persistent Docker log streaming over HTTP/HTTPS.
+  Q_INVOKABLE QString startHttpStreamingRequest(
+      const QString &url,
+      const QString &requestId);
 
   // One-shot Docker Engine API request.
   Q_INVOKABLE void sendHttpRequest(const QString &socketPath,
@@ -41,10 +49,12 @@ signals:
 
   // Emits decoded HTTP response-body bytes.
   // Docker's own multiplexed log frames remain untouched.
-  void streamingData(const QString &requestId, const QByteArray &data);
+  void streamingData(const QString &requestId, const QString &data);
 
   void streamingFinished(const QString &requestId, const QVariantMap &result);
 
 private:
   QHash<QString, StreamingRequestState *> m_activeStreamingRequests;
+  QNetworkAccessManager *m_networkAccessManager = nullptr;
+  QHash<QString, QPointer<QNetworkReply>> m_activeHttpStreamingRequests;
 };

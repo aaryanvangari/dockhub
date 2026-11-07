@@ -380,19 +380,6 @@ function streamContainerLogs(server, id, unixSocketBridge,
         return "";
     }
 
-    if (!isLocalServer(server)) {
-        if (onFinished) {
-            onFinished({
-                success: false,
-                status: 0,
-                data: null,
-                error: "Persistent log streaming is currently supported only for Unix socket servers"
-            });
-        }
-
-        return "";
-    }
-
     if (!unixSocketBridge) {
         if (onFinished) {
             onFinished({
@@ -406,20 +393,30 @@ function streamContainerLogs(server, id, unixSocketBridge,
         return "";
     }
 
+    const localSocket = isLocalServer(server);
+
     const serverUrl = String(server.url || "");
     const serverLabel = String(server.name || "server");
+    const transportLabel = localSocket ? "Unix" : "HTTP";
+
     const requestId = makeStreamId();
 
-    const endpoint =
-        getEndpoint(
-            server,
-            "/containers/" + encodeURIComponent(id) +
-            "/logs?stdout=1&stderr=1&follow=1&tail=150&timestamps=1"
-        );
+    const endpoint = getEndpoint(
+        server,
+        "/containers/" + encodeURIComponent(id) +
+        "/logs?stdout=1&stderr=1&follow=1&tail=150&timestamps=1"
+    );
+
+    // HTTP servers require the complete URL.
+    // Unix socket servers use the socket path separately.
+    const streamUrl = localSocket
+        ? serverUrl
+        : serverUrl.replace(/\/+$/, "") + endpoint;
 
     const parser = DockerLogParser.createParser();
 
     let completed = false;
+
     const startedAt = Date.now();
 
     let onStreamingData = null;
@@ -438,6 +435,10 @@ function streamContainerLogs(server, id, unixSocketBridge,
         } catch (error) {
         }
     };
+
+    // --------------------------------------------------------------
+    // Incoming Docker log data
+    // --------------------------------------------------------------
 
     onStreamingData = function(receivedId, bytes) {
         if (receivedId !== requestId || completed)
@@ -458,16 +459,21 @@ function streamContainerLogs(server, id, unixSocketBridge,
         );
     };
 
+    // --------------------------------------------------------------
+    // Stream completion
+    // --------------------------------------------------------------
+
     onStreamingFinished = function(receivedId, result) {
         if (receivedId !== requestId || completed)
             return;
 
         completed = true;
 
+        // Flush any remaining parser data.
         DockerLogParser.finish(
             parser,
             function(stream, data) {
-                if (onData) {
+                if (onData && data) {
                     onData({
                         stream: stream,
                         data: data
@@ -479,7 +485,8 @@ function streamContainerLogs(server, id, unixSocketBridge,
         cleanup();
 
         console.log(
-            "[DockHub Unix Stream] <- " + serverLabel +
+            "[DockHub " + transportLabel + " Stream] <- " +
+            serverLabel +
             " container logs " +
             (result.success ? result.status : "error") +
             " " + (Date.now() - startedAt) + " ms"
@@ -489,23 +496,39 @@ function streamContainerLogs(server, id, unixSocketBridge,
             onFinished(result);
     };
 
-    console.log(
-        "[DockHub Unix Stream] -> " + serverLabel +
-        " container logs GET " + endpoint
-    );
-
+    // Connect before starting the request so that no incoming
+    // streaming data can be missed.
     unixSocketBridge.streamingData.connect(onStreamingData);
     unixSocketBridge.streamingFinished.connect(onStreamingFinished);
 
+    console.log(
+        "[DockHub " + transportLabel + " Stream] -> " +
+        serverLabel +
+        " container logs GET " +
+        (localSocket ? endpoint : streamUrl)
+    );
+
+    // --------------------------------------------------------------
+    // Start the appropriate transport
+    // --------------------------------------------------------------
+
     try {
-        const returnedId =
-            unixSocketBridge.startStreamingRequest(
+        let returnedId = "";
+
+        if (localSocket) {
+            returnedId = unixSocketBridge.startStreamingRequest(
                 serverUrl,
                 "GET",
                 endpoint,
                 null,
                 requestId
             );
+        } else {
+            returnedId = unixSocketBridge.startHttpStreamingRequest(
+                streamUrl,
+                requestId
+            );
+        }
 
         if (!returnedId) {
             completed = true;

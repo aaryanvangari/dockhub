@@ -19,6 +19,7 @@ Item {
     property var resourceItems: []
     property var resourceCache: ({})
     property var resourceRequests: ({})
+    property var pendingContainerLogs: ({})
     property var pendingResourceLoad: null
     property var pendingStatsQueue: []
     property var statsServer: null
@@ -1015,88 +1016,133 @@ Item {
     // ------------------------------------------------------------------
     // Container log handling
     // ------------------------------------------------------------------
-
     function updateContainerLogs(id, text, append) {
-        if (!id || (append && (text === undefined || text === null || text === "")))
+        if (!id)
             return;
-
-        const updated = page.containers.slice();
-
-        for (let i = 0; i < updated.length; ++i) {
-            if (updated[i].Id !== id)
-                continue;
-
-            const previous = append ? String(updated[i].logs || "") : "";
-            const incoming = String(text);
-
-            // Put newly received lines before existing output.
-            let logs = append ? incoming + previous : incoming;
-
-            // Bound the UI model during long-running streams.
-            const maxLogCharacters = 250000;
-
-            if (logs.length > maxLogCharacters)
-                logs = logs.slice(0, maxLogCharacters);
-
-            updated[i] = Object.assign({}, updated[i], {
-                logs: logs
-            });
-
-            page.setContainers(updated);
+    
+        if (!append) {
+            // Clear the displayed logs when a new stream starts.
+            page.pendingContainerLogs[id] = "";
+            page.flushPendingContainerLogs();
             return;
         }
+    
+        if (text === undefined || text === null || text === "")
+            return;
+    
+        // Accumulate incoming data until the next UI refresh.
+        const pending = page.pendingContainerLogs;
+        pending[id] = String(pending[id] || "") + String(text);
+    
+        if (!logUpdateTimer.running)
+            logUpdateTimer.start();
+    }
+
+    function flushPendingContainerLogs() {
+        const pending = page.pendingContainerLogs;
+        const ids = Object.keys(pending);
+    
+        if (ids.length === 0)
+            return;
+    
+        // Replace the pending buffer before processing it.
+        page.pendingContainerLogs = ({});
+    
+        const updated = page.containers.slice();
+        const maxLogCharacters = 250000;
+    
+        let changed = false;
+    
+        for (let i = 0; i < ids.length; ++i) {
+            const id = ids[i];
+            const incoming = pending[id];
+    
+            for (let j = 0; j < updated.length; ++j) {
+                if (updated[j].Id !== id)
+                    continue;
+    
+                const previous = String(updated[j].logs || "");
+                let logs = previous + incoming;
+
+                if (logs.length > maxLogCharacters)
+                    logs = logs.slice(-maxLogCharacters);
+    
+                updated[j] = Object.assign({}, updated[j], {
+                    logs: logs
+                });
+    
+                changed = true;
+                break;
+            }
+        }
+    
+        // Update the QML model only once for the entire batch.
+        if (changed)
+            page.setContainers(updated);
     }
 
     function stopLogStream() {
         const requestId = page.activeLogStreamId;
-
-        // Clear ownership before asking C++ to stop. Any queued signal
-        // from the old stream will therefore be ignored.
+    
+        // Clear ownership before asking C++ to stop.
         page.activeLogStreamId = "";
         page.activeLogContainerId = "";
         page.activeLogServerUrl = "";
-
+    
         if (requestId && page.unixSocketBridge)
             DockerApi.stopContainerLogs(page.unixSocketBridge, requestId);
     }
 
+
     function startLogStream(id) {
         const server = page.selectedServer;
-
+    
         if (!server || !id || page.expandedId !== id || page.detailTab !== 1)
             return;
-
-        if (page.activeLogStreamId && page.activeLogContainerId === id && page.activeLogServerUrl === server.url)
+    
+        if (page.activeLogStreamId &&
+            page.activeLogContainerId === id &&
+            page.activeLogServerUrl === server.url) {
             return;
-
+        }
+    
         page.stopLogStream();
         page.logStreamError = "";
         page.updateContainerLogs(id, "", false);
-
-        // HTTP/TCP servers retain the one-shot request and refresh timer.
-        // Persistent streaming is currently implemented by UnixSocketBridge.
-        if (server.connectionType !== "socket") {
-            page.loadLogs(id);
-            return;
-        }
-
-        const requestId = DockerApi.streamContainerLogs(server, id, page.unixSocketBridge, function (entry) {
-            if (page.expandedId !== id || !page.selectedServer || page.selectedServer.url !== server.url)
-                return;
-
-            page.updateContainerLogs(id, entry.data, true);
-        }, function (result) {
-            if (page.activeLogContainerId !== id || page.activeLogServerUrl !== server.url)
-                return;
-
-            page.activeLogStreamId = "";
-            page.activeLogContainerId = "";
-            page.activeLogServerUrl = "";
-
-            if (!result.success)
-                page.logStreamError = result.error || "Log stream ended unexpectedly";
-        });
-
+    
+        const requestId = DockerApi.streamContainerLogs(
+            server,
+            id,
+            page.unixSocketBridge,
+    
+            // New log data received.
+            function(entry) {
+                if (page.expandedId !== id ||
+                    page.detailTab !== 1 ||
+                    !page.selectedServer ||
+                    page.selectedServer.url !== server.url) {
+                    return;
+                }
+    
+                page.updateContainerLogs(id, entry.data, true);
+            },
+    
+            // Stream finished or failed.
+            function(result) {
+                if (page.activeLogContainerId !== id ||
+                    page.activeLogServerUrl !== server.url) {
+                    return;
+                }
+    
+                page.activeLogStreamId = "";
+                page.activeLogContainerId = "";
+                page.activeLogServerUrl = "";
+    
+                if (!result.success)
+                    page.logStreamError = result.error || "Log stream ended unexpectedly";
+            }
+        );
+    
         if (requestId) {
             page.activeLogStreamId = requestId;
             page.activeLogContainerId = id;
@@ -1194,19 +1240,18 @@ Item {
     }
 
     Timer {
+        id: logUpdateTimer
+        interval: 50
+        repeat: false
+    
+        onTriggered: page.flushPendingContainerLogs()
+    }
+
+    Timer {
         interval: Math.max(1, page.configuration.serverOverviewRefreshInterval || 45) * 1000
         running: page.selectedServer === null
         repeat: true
         onTriggered: page.refreshDashboard()
-    }
-
-    // Only HTTP/TCP servers need periodic one-shot log refreshes.
-    // Unix socket servers use the persistent stream instead.
-    Timer {
-        interval: 10000
-        running: page.expandedId !== "" && page.detailTab === 1 && page.selectedServer !== null && page.selectedServer.connectionType !== "socket"
-        repeat: true
-        onTriggered: page.loadLogs(page.expandedId)
     }
 
     Timer {
