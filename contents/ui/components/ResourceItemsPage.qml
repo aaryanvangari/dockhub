@@ -12,7 +12,9 @@ ColumnLayout {
     property var clipboard
     Layout.fillWidth: true
     Layout.fillHeight: true
-    visible: controller.selectedServer !== null && controller.selectedResource !== ""
+    visible: controller.selectedServer !== null &&
+             controller.selectedResource !== "" &&
+             !controller.logsPageOpen
     spacing: 8
 
     Item {

@@ -50,7 +50,6 @@ Item {
 
     property string errorText: ""
     property string noticeText: ""
-    property int detailTab: 0
     property string expandedId: ""
     property string expandedNetworkId: ""
     property string expandedVolumeName: ""
@@ -62,6 +61,12 @@ Item {
     property string activeLogContainerId: ""
     property string activeLogServerUrl: ""
     property string logStreamError: ""
+
+    // Dedicated container Logs page.
+    property bool logsPageOpen: false
+    property string logsContainerId: ""
+    property string logsContainerName: ""
+    property string logText: ""
 
     function loadServers() {
         try {
@@ -1021,64 +1026,45 @@ Item {
             return;
     
         if (!append) {
-            // Clear the displayed logs when a new stream starts.
             page.pendingContainerLogs[id] = "";
-            page.flushPendingContainerLogs();
+            page.logText = "";
+            logUpdateTimer.stop();
             return;
         }
     
         if (text === undefined || text === null || text === "")
             return;
     
-        // Accumulate incoming data until the next UI refresh.
         const pending = page.pendingContainerLogs;
         pending[id] = String(pending[id] || "") + String(text);
     
         if (!logUpdateTimer.running)
             logUpdateTimer.start();
     }
-
+    
     function flushPendingContainerLogs() {
         const pending = page.pendingContainerLogs;
-        const ids = Object.keys(pending);
+        const id = page.logsContainerId;
     
-        if (ids.length === 0)
+        if (!id || pending[id] === undefined)
             return;
     
-        // Replace the pending buffer before processing it.
-        page.pendingContainerLogs = ({});
+        const incoming = String(pending[id] || "");
     
-        const updated = page.containers.slice();
+        // Clear this container's pending data.
+        delete pending[id];
+    
+        if (!incoming)
+            return;
+    
         const maxLogCharacters = 250000;
     
-        let changed = false;
+        let updatedLogs = page.logText + incoming;
     
-        for (let i = 0; i < ids.length; ++i) {
-            const id = ids[i];
-            const incoming = pending[id];
+        if (updatedLogs.length > maxLogCharacters)
+            updatedLogs = updatedLogs.slice(-maxLogCharacters);
     
-            for (let j = 0; j < updated.length; ++j) {
-                if (updated[j].Id !== id)
-                    continue;
-    
-                const previous = String(updated[j].logs || "");
-                let logs = previous + incoming;
-
-                if (logs.length > maxLogCharacters)
-                    logs = logs.slice(-maxLogCharacters);
-    
-                updated[j] = Object.assign({}, updated[j], {
-                    logs: logs
-                });
-    
-                changed = true;
-                break;
-            }
-        }
-    
-        // Update the QML model only once for the entire batch.
-        if (changed)
-            page.setContainers(updated);
+        page.logText = updatedLogs;
     }
 
     function stopLogStream() {
@@ -1097,8 +1083,10 @@ Item {
     function startLogStream(id) {
         const server = page.selectedServer;
     
-        if (!server || !id || page.expandedId !== id || page.detailTab !== 1)
+        if (!server || !id || !page.logsPageOpen ||
+            page.logsContainerId !== id) {
             return;
+        }
     
         if (page.activeLogStreamId &&
             page.activeLogContainerId === id &&
@@ -1117,8 +1105,8 @@ Item {
     
             // New log data received.
             function(entry) {
-                if (page.expandedId !== id ||
-                    page.detailTab !== 1 ||
+                if (!page.logsPageOpen ||
+                    page.logsContainerId !== id ||
                     !page.selectedServer ||
                     page.selectedServer.url !== server.url) {
                     return;
@@ -1139,7 +1127,8 @@ Item {
                 page.activeLogServerUrl = "";
     
                 if (!result.success)
-                    page.logStreamError = result.error || "Log stream ended unexpectedly";
+                    page.logStreamError = result.error ||
+                        "Log stream ended unexpectedly";
             }
         );
     
@@ -1152,6 +1141,36 @@ Item {
         }
     }
 
+    function openLogs(container) {
+        if (!container || !page.selectedServer)
+            return;
+    
+        page.stopLogStream();
+    
+        page.logsContainerId = container.Id;
+        page.logsContainerName = ContainerData.containerName(container);
+        page.logsPageOpen = true;
+    
+        page.logText = "";
+        page.logStreamError = "";
+        page.pendingContainerLogs = ({});
+    
+        page.startLogStream(container.Id);
+    }
+    
+    function closeLogs() {
+        page.stopLogStream();
+    
+        page.logsPageOpen = false;
+        page.logsContainerId = "";
+        page.logsContainerName = "";
+        page.logText = "";
+        page.logStreamError = "";
+        page.pendingContainerLogs = ({});
+    
+        logUpdateTimer.stop();
+    }
+
     function toggleExpanded(container) {
         if (page.expandedId === container.Id) {
             page.stopLogStream();
@@ -1162,7 +1181,6 @@ Item {
         page.stopLogStream();
 
         page.expandedId = container.Id;
-        page.detailTab = 0;
         page.logStreamError = "";
 
         const server = page.selectedServer;
@@ -1186,20 +1204,6 @@ Item {
         }, unixSocketBridge);
     }
 
-    // One-shot log retrieval, retained for HTTP/TCP servers.
-    function loadLogs(id) {
-        const server = page.selectedServer;
-
-        if (!server || !id || page.expandedId !== id)
-            return;
-
-        DockerApi.containerLogs(server, id, function (result) {
-            if (!result.success || page.expandedId !== id || !page.selectedServer || page.selectedServer.url !== server.url)
-                return;
-
-            page.updateContainerLogs(id, result.data || "", false);
-        }, unixSocketBridge);
-    }
 
     function setContainerState(container, start) {
         const server = page.selectedServer;
@@ -1306,19 +1310,12 @@ Item {
 
     Connections {
         target: page
-
-        function onDetailTabChanged() {
-            if (page.detailTab === 1 && page.expandedId !== "")
-                page.startLogStream(page.expandedId);
-            else
+    
+        function onLogsPageOpenChanged() {
+            if (!page.logsPageOpen)
                 page.stopLogStream();
         }
-
-        function onExpandedIdChanged() {
-            if (page.expandedId === "")
-                page.stopLogStream();
-        }
-
+    
         function onSelectedResourceChanged() {
             if (page.selectedResource !== "") {
                 page.stopLogStream();

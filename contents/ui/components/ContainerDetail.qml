@@ -15,21 +15,6 @@ ColumnLayout {
     Layout.fillWidth: true
     visible: controller.expandedId === modelData.Id
 
-    PlasmaComponents.TabBar {
-        Layout.fillWidth: true
-        currentIndex: controller.detailTab
-
-        onCurrentIndexChanged: controller.detailTab = currentIndex
-
-        PlasmaComponents.TabButton {
-            text: Shared.Strings.information
-        }
-
-        PlasmaComponents.TabButton {
-            text: Shared.Strings.logs
-        }
-    }
-
     Flickable {
         id: detailFlickable
 
@@ -42,14 +27,6 @@ ColumnLayout {
 
         QQC2.ScrollBar.vertical: QQC2.ScrollBar {}
 
-        // Keep the newest log output visible at the top.
-        onContentHeightChanged: {
-            if (controller.detailTab === 1) {
-                Qt.callLater(function () {
-                    detailFlickable.contentY = 0;
-                });
-            }
-        }
 
         Column {
             id: detailContent
@@ -59,7 +36,6 @@ ColumnLayout {
             spacing: 8
 
             Rectangle {
-                visible: controller.detailTab === 0
                 width: parent.width
                 height: nameCpuMemory.implicitHeight + 20
                 radius: 7
@@ -163,7 +139,6 @@ ColumnLayout {
             }
 
             Rectangle {
-                visible: controller.detailTab === 0
                 width: parent.width
                 height: identityCard.implicitHeight + 20
                 radius: 7
@@ -276,7 +251,6 @@ ColumnLayout {
             }
 
             Rectangle {
-                visible: controller.detailTab === 0
                 width: parent.width
                 height: ioCard.implicitHeight + 20
                 radius: 7
@@ -342,7 +316,6 @@ ColumnLayout {
             }
 
             Rectangle {
-                visible: controller.detailTab === 0
                 width: parent.width
                 height: networkCard.implicitHeight + 20
                 radius: 7
@@ -471,7 +444,6 @@ ColumnLayout {
             }
 
             Rectangle {
-                visible: controller.detailTab === 0
                 width: parent.width
                 height: volumeCard.implicitHeight + 20
                 radius: 7
@@ -570,29 +542,6 @@ ColumnLayout {
                         visible: ContainerData.volumeMappings(modelData).length === 0
                         text: "—"
                     }
-                }
-            }
-
-            // Live container logs.
-            Column {
-                visible: controller.detailTab === 1
-                width: parent.width
-                spacing: 6
-
-                PlasmaComponents.Label {
-                    visible: controller.logStreamError !== ""
-                    width: parent.width
-                    text: controller.logStreamError
-                    color: Kirigami.Theme.negativeTextColor
-                    wrapMode: Text.Wrap
-                }
-
-                PlasmaComponents.Label {
-                    width: parent.width
-                    text: modelData.logs || Shared.Strings.loadingLogs
-                    font.family: "monospace"
-                    wrapMode: Text.WrapAnywhere
-                    verticalAlignment: Text.AlignTop
                 }
             }
         }
