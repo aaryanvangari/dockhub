@@ -30,6 +30,9 @@
   <entry name="connectionType" type="String">
     <default>[]</default>
   </entry>
+  <entry name="logSize" type="Int">
+    <default>1</default>
+  </entry>
 </group>
 
 </kcfg>

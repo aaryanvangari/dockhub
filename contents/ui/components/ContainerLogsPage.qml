@@ -51,7 +51,15 @@ ColumnLayout {
                 text: controller.logText || ""
 
                 font.family: "monospace"
-                font.pixelSize: Kirigami.Theme.defaultFont.pixelSize
+                font.pixelSize: {
+                    switch (controller.configuration.logSize) {
+                    case 0: return 10;  // Smaller
+                    case 1: return 12;  // Small
+                    case 2: return 14;  // Medium
+                    case 3: return 16;  // Large
+                    default: return 12;
+                    }
+                }
                 color: Kirigami.Theme.textColor
 
                 wrapMode: TextEdit.WrapAnywhere
