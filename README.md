@@ -30,10 +30,13 @@ DockHub is a KDE Plasma applet for managing multiple Docker server instances fro
 - **Networks:** View network configurations, IPAM settings and attached containers.
 - **Volumes:** Inspect Docker volumes and their associated containers.
 - **Events:** Monitor Docker daemon events, including container lifecycle changes and image operations.
+- **Stacks:** View Docker compose stacks with container counts and nested container lists.
+- **Container Logs:** Stream and view real-time container logs with auto-follow scrolling.
 
 ### Container Actions
 
-- Start, stop and restart containers.
+- Start, stop, restart, pause and unpause containers.
+- Stream and view real-time container logs.
 - Copy container IDs, names, port mappings and volume mappings to the clipboard.
 - Search containers by name, image, port or IP address.
 
@@ -50,6 +53,7 @@ DockHub is a KDE Plasma applet for managing multiple Docker server instances fro
 - Choose which metrics appear in server overview cards.
 - Configure the resource usage statistics refresh interval.
 - Select which resource pages to display, including stacks, images, networks, volumes and events.
+- Configure log font size for the real-time log viewer.
 
 ## Download and Installation
 
@@ -121,7 +125,7 @@ Example:
 /var/run/docker.sock
 ```
 
-Local Unix socket communication is handled by DockHub's native C++ plugin.
+Local Unix socket communication is handled by DockHub's native C++ plugin (`UnixSocketBridge`), which manages HTTP request construction, chunked-transfer decoding, and persistent streaming connections over `QLocalSocket`.
 
 ### Future Connection Methods
 
@@ -307,7 +311,7 @@ See the [Developer Guide](./DEVELOPMENT.md) for development and build instructio
 - Original idea and implementation by Aaryan Vangari.
 - Built using the KDE Plasma Plasmoid framework.
 - Uses QtQuick/QML for the user interface.
-- Uses a native C++ QML plugin for local Docker Unix socket communication.
+- Uses a native C++ QML plugin (`UnixSocketBridge`) for local Docker Unix socket communication and HTTP streaming.
 - Integrates with the Docker Engine API.
 
 ## Links
