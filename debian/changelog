@@ -1,3 +1,12 @@
+dockhub (2.0.0-1) unstable; urgency=medium
+
+  * Logs streaming using unix sockets and http.
+  * Customizable logs font size
+  * Separate logs page
+  * Improved network performance
+
+ -- Aaryan Vangari <aaryanvangari@gmail.com>  Mon, 10 Nov 2026 08:35:00 +0530
+
 dockhub (1.0.0-1) unstable; urgency=medium
 
   * Initial Debian package release.
