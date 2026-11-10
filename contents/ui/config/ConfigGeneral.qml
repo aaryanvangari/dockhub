@@ -14,7 +14,8 @@ Kirigami.ScrollablePage {
     property alias cfg_showServerImages: serverImagesCheck.checked
     property alias cfg_showServerVolumes: serverVolumesCheck.checked
     property alias cfg_servers: serializedServers.text
-    
+    property alias cfg_logSize: logSizeComboBox.currentIndex
+
     property int cfg_updateIntervalDefault: 30
     property int cfg_serverOverviewRefreshIntervalDefault: 45
     property int cfg_usageIntervalDefault: 5
@@ -22,6 +23,7 @@ Kirigami.ScrollablePage {
     property bool cfg_showServerImagesDefault: false
     property bool cfg_showServerVolumesDefault: false
     property string cfg_serversDefault: "[]"
+    property int cfg_logSizeDefault: 1
     property string cfg_connectionTypeDefault: "[]"
     property string cfg_connectionType: ""
 
@@ -36,6 +38,12 @@ Kirigami.ScrollablePage {
     readonly property string extraServerCallsNote: i18n("Showing Images and Volumes adds API calls to each server overview refresh.")
     readonly property string imagesLabel: i18n("Images")
     readonly property string volumesLabel: i18n("Volumes")
+    readonly property string logSizeFontLabel: i18n("Font size")
+    readonly property string logSizeSmaller: i18n("Smaller")
+    readonly property string logSizeSmall: i18n("Small")
+    readonly property string logSizeMedium: i18n("Medium")
+    readonly property string logSizeLarge: i18n("Large")
+    readonly property string logsLabel: i18n("Logs")
 
     ColumnLayout {
         anchors.left: parent.left
@@ -45,36 +53,44 @@ Kirigami.ScrollablePage {
 
         Kirigami.FormLayout {
             Layout.fillWidth: true
+
             Kirigami.Separator {
                 Kirigami.FormData.isSection: true
                 Kirigami.FormData.label: page.generalLabel
             }
+
             QQC2.SpinBox {
                 id: updateIntervalSpin
                 Kirigami.FormData.label: page.refreshDashboardEveryLabel
                 from: 1
                 to: 3600
                 editable: true
-                textFromValue: function (value) {
+
+                textFromValue: function(value) {
                     return value + page.secondsSuffix;
                 }
-                valueFromText: function (text) {
+
+                valueFromText: function(text) {
                     return parseInt(text);
                 }
             }
+
             QQC2.SpinBox {
                 id: usageIntervalSpin
                 Kirigami.FormData.label: page.refreshUsageEveryLabel
                 from: 1
                 to: 3600
                 editable: true
-                textFromValue: function (value) {
+
+                textFromValue: function(value) {
                     return value + page.secondsSuffix;
                 }
-                valueFromText: function (text) {
+
+                valueFromText: function(text) {
                     return parseInt(text);
                 }
             }
+
             Kirigami.Separator {
                 Kirigami.FormData.isSection: true
                 Kirigami.FormData.label: page.serverLabel
@@ -86,10 +102,12 @@ Kirigami.ScrollablePage {
                 from: 1
                 to: 3600
                 editable: true
-                textFromValue: function (value) {
+
+                textFromValue: function(value) {
                     return value + page.secondsSuffix;
                 }
-                valueFromText: function (text) {
+
+                valueFromText: function(text) {
                     return parseInt(text);
                 }
             }
@@ -100,30 +118,52 @@ Kirigami.ScrollablePage {
                 from: 2
                 to: 3
                 editable: false
-                textFromValue: function (value) {
+
+                textFromValue: function(value) {
                     return String(value) + " " + page.columnsSuffix;
                 }
             }
-    
+
             RowLayout {
                 Kirigami.FormData.label: " "
                 spacing: Kirigami.Units.largeSpacing
+
                 QQC2.CheckBox {
                     id: serverImagesCheck
                     text: page.imagesLabel
                 }
+
                 QQC2.CheckBox {
                     id: serverVolumesCheck
                     text: page.volumesLabel
                 }
             }
+            
             QQC2.Label {
                 text: page.extraServerCallsNote
                 font: Kirigami.Theme.smallFont
                 wrapMode: Text.WordWrap
                 opacity: 0.75
             }
+
+            Kirigami.Separator {
+                Kirigami.FormData.isSection: true
+                Kirigami.FormData.label: page.logsLabel
+            }
+
+            QQC2.ComboBox {
+                id: logSizeComboBox
+                Kirigami.FormData.label: page.logSizeFontLabel
+
+                model: [
+                    page.logSizeSmaller,
+                    page.logSizeSmall,
+                    page.logSizeMedium,
+                    page.logSizeLarge
+                ]
+            }
         }
+
         QQC2.TextField {
             id: serializedServers
             visible: false

@@ -51,6 +51,21 @@ QQC2.Frame {
                         elide: Text.ElideRight
                     }
                     PlasmaComponents.ToolButton {
+                        visible: ContainerData.isRunning(modelData)
+                        icon.name: IconNames.logs
+                        text: Shared.Strings.logs
+                    
+                        QQC2.ToolTip.text: Shared.Strings.logs
+                        QQC2.ToolTip.visible: hovered
+                    
+                        onClicked: {
+                            controller.openResource("Logs", false, {
+                                id: modelData.Id,
+                                name: ContainerData.containerName(modelData)
+                            });
+                        }
+                    }
+                    PlasmaComponents.ToolButton {
                         icon.name: ContainerData.isRunning(modelData) ? IconNames.containerStop : IconNames.containerStart
                         text: ContainerData.isRunning(modelData) ? Shared.Strings.stop : Shared.Strings.start
                         display: QQC2.AbstractButton.TextBesideIcon
