@@ -56,11 +56,11 @@ PlasmoidItem {
                 QQC2.ToolTip.text: page.selectedResource !== "" ? Shared.Strings.backToServer : Shared.Strings.backToServers
                 QQC2.ToolTip.visible: hovered
                 onClicked: {
-                    if (page.logsPageOpen) {
-                        page.closeLogs();
-                    } else if (page.selectedResource !== "") {
+                    if (page.selectedResource !== "") {
                         page.selectedResource = "";
                         page.resourceError = "";
+                        page.logsContainerId = "";
+                        page.logsContainerName = "";
                         page.requestContainerSearch();
                         page.refreshContainers(true);
                     } else {
@@ -74,19 +74,19 @@ PlasmoidItem {
             Kirigami.Heading {
                 Layout.fillWidth: true
                 level: 2
-                text: page.logsPageOpen
-                      ? "Logs → " + page.logsContainerName
-                      : page.selectedResource !== ""
+                text: page.selectedResource === "Logs"
+                    ? "Logs → " + page.logsContainerName
+                    : page.selectedResource !== ""
                         ? page.selectedServer.name + " · " + page.selectedResource
                         : page.selectedServer
-                          ? page.selectedServer.name
-                          : Shared.Strings.dockhub
+                        ? page.selectedServer.name
+                        : Shared.Strings.dockhub
                 font.bold: true
                 elide: Text.ElideRight
             }
             PlasmaComponents.ToolButton {
                 icon.name: IconNames.refresh
-                visible: !page.logsPageOpen
+                visible: page.selectedResource !== "Logs"
                 display: QQC2.AbstractButton.IconOnly
                 QQC2.ToolTip.text: Shared.Strings.refresh
                 QQC2.ToolTip.visible: hovered
@@ -118,8 +118,7 @@ PlasmoidItem {
             spacing: 10
             PlasmaComponents.Label {
                 Layout.fillWidth: true
-                visible: !page.logsPageOpen &&
-                         (page.errorText !== "" || page.noticeText !== "")
+                visible: page.errorText !== "" || page.noticeText !== "" && page.selectedResource !== "Logs"
                 text: page.errorText || page.noticeText
                 color: page.errorText ? Kirigami.Theme.negativeTextColor : Kirigami.Theme.textColor
                 wrapMode: Text.Wrap
@@ -127,7 +126,7 @@ PlasmoidItem {
             Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                visible: page.selectedServer === null && !page.logsPageOpen
+                visible: page.selectedServer === null
                 ListView {
                     anchors.fill: parent
                     clip: true
@@ -146,9 +145,7 @@ PlasmoidItem {
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                visible: page.selectedServer !== null &&
-                         page.selectedResource === "" &&
-                         !page.logsPageOpen
+                visible: page.selectedServer !== null && page.selectedResource === ""
                 QQC2.TextField {
                     id: containerSearchField
                     Layout.fillWidth: true
@@ -196,15 +193,10 @@ PlasmoidItem {
             Components.ResourceItemsPage {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+            
                 controller: page
                 clipboard: root.sharedClipboard
-            }
-            Components.ContainerLogsPage {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-            
-                visible: page.logsPageOpen
-                controller: page
+                unixSocketBridge: root.sharedUnixSocketBridge
             }
         }
     }

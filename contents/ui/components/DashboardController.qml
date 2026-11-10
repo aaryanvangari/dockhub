@@ -19,7 +19,6 @@ Item {
     property var resourceItems: []
     property var resourceCache: ({})
     property var resourceRequests: ({})
-    property var pendingContainerLogs: ({})
     property var pendingResourceLoad: null
     property var pendingStatsQueue: []
     property var statsServer: null
@@ -55,18 +54,9 @@ Item {
     property string expandedVolumeName: ""
     property string expandedImageId: ""
     property string expandedStackName: ""
-
-    // Persistent log-stream state.
-    property string activeLogStreamId: ""
-    property string activeLogContainerId: ""
-    property string activeLogServerUrl: ""
-    property string logStreamError: ""
-
-    // Dedicated container Logs page.
-    property bool logsPageOpen: false
     property string logsContainerId: ""
     property string logsContainerName: ""
-    property string logText: ""
+
 
     function loadServers() {
         try {
@@ -236,6 +226,8 @@ Item {
     }
 
     function refreshDashboard() {
+        if (page.selectedServer !== null)
+            return;
         for (let i = 0; i < servers.length; ++i) {
             const server = servers[i];
             const serverIndex = i;
@@ -308,9 +300,9 @@ Item {
     }
 
     function openServer(server) {
-        page.stopLogStream();
-
         selectedServer = server;
+        logsContainerId = "";
+        logsContainerName = "";
         selectedResource = "";
         containerSearchQuery = "";
         errorText = "";
@@ -333,41 +325,74 @@ Item {
         refreshContainers();
     }
 
-    function openResource(resource, forceRefresh) {
+    function openResource(resource, forceRefresh, resourceData) {
         if (!selectedServer)
             return;
-
+    
         const server = selectedServer;
+    
+        if (resource === "Logs") {
+            // Cancel a resource load that has been queued but not started.
+            page.pendingResourceLoad = null;
+            resourceRequestStartTimer.stop();
+    
+            // Set the log target before activating the Logs resource.
+            page.logsContainerId = resourceData ? String(resourceData.id || "") : "";
+            page.logsContainerName = resourceData ? String(resourceData.name || "") : "";
+    
+            page.resourcePage = 0;
+            page.resourceItems = [];
+            page.resourceError = "";
+            page.resourceLoading = false;
+    
+            page.expandedNetworkId = "";
+            page.expandedVolumeName = "";
+            page.expandedImageId = "";
+            page.expandedStackName = "";
+    
+            page.selectedResource = "Logs";
+    
+            // Discard queued dashboard stats while Logs is active.
+            page.pendingStatsQueue = [];
+            page.statsServer = null;
+            statsRefreshTimer.stop();
+    
+            return;
+        }
+    
         const cacheKey = server.url + "|" + resource;
         const cached = page.resourceCache[cacheKey];
         const refreshInterval = Math.max(1, Number(page.configuration.updateInterval || 30)) * 1000;
         const cacheIsFresh = cached && Date.now() - Number(cached.updatedAt || 0) < refreshInterval;
-
+    
         selectedResource = resource;
         resourcePage = 0;
         expandedNetworkId = "";
         expandedVolumeName = "";
         expandedImageId = "";
         expandedStackName = "";
-
+    
         resourceItems = cached ? cached.data : [];
         resourceError = "";
         resourceLoading = !cached;
-
+    
         const applyResult = function (result) {
-            if (!page.selectedServer || page.selectedServer.url !== server.url || page.selectedResource !== resource)
+            if (!page.selectedServer ||
+                page.selectedServer.url !== server.url ||
+                page.selectedResource !== resource) {
                 return;
-
+            }
+    
             page.resourceLoading = false;
-
+    
             if (!result.success) {
                 page.resourceError = result.error || Shared.Strings.resourceError(resource);
                 return;
             }
-
+    
             page.resourceItems = result.data || [];
         };
-
+    
         if (resource === "Stacks") {
             page.resourceItems = page.buildStackItems(page.containers);
             page.resourceLoading = false;
@@ -383,8 +408,11 @@ Item {
     }
 
     function refreshCurrentResource() {
-        if (!page.selectedServer || page.selectedResource === "")
+        if (!page.selectedServer ||
+            page.selectedResource === "" ||
+            page.selectedResource === "Logs") {
             return;
+        }
 
         if (page.selectedResource === "Stacks") {
             page.refreshContainers(false, false, false);
@@ -826,6 +854,8 @@ Item {
     }
 
     function refreshServerSummary(server, containerList, forceResourceRefresh) {
+        if (page.selectedResource === "Logs")
+            return;
         const summary = {
             stacks: 0,
             containers: containerList.length,
@@ -866,7 +896,10 @@ Item {
         page.serverSummary = summary;
 
         page.requestResourceData(server, "Images", function (result) {
-            if (result.success && page.selectedServer && page.selectedServer.url === server.url) {
+            if (result.success &&
+                page.selectedServer &&
+                page.selectedServer.url === server.url &&
+                page.selectedResource !== "Logs") {
                 page.serverSummary = Object.assign({}, page.serverSummary, {
                     images: result.data.length
                 });
@@ -874,7 +907,10 @@ Item {
         }, !!forceResourceRefresh);
 
         page.requestResourceData(server, "Volumes", function (result) {
-            if (result.success && page.selectedServer && page.selectedServer.url === server.url) {
+            if (result.success &&
+                page.selectedServer &&
+                page.selectedServer.url === server.url &&
+                page.selectedResource !== "Logs") {
                 page.serverSummary = Object.assign({}, page.serverSummary, {
                     volumes: result.data.length
                 });
@@ -882,7 +918,10 @@ Item {
         }, !!forceResourceRefresh);
 
         page.requestResourceData(server, "Networks", function (result) {
-            if (result.success && page.selectedServer && page.selectedServer.url === server.url) {
+            if (result.success &&
+                page.selectedServer &&
+                page.selectedServer.url === server.url &&
+                page.selectedResource !== "Logs") {
                 page.serverSummary = Object.assign({}, page.serverSummary, {
                     networks: result.data.length
                 });
@@ -890,7 +929,10 @@ Item {
         }, !!forceResourceRefresh);
 
         page.requestResourceData(server, "Events", function (result) {
-            if (!result.success || !page.selectedServer || page.selectedServer.url !== server.url)
+            if (result.success &&
+                page.selectedServer &&
+                page.selectedServer.url === server.url &&
+                page.selectedResource !== "Logs")
                 return;
 
             page.serverSummary = Object.assign({}, page.serverSummary, {
@@ -909,6 +951,8 @@ Item {
 
         DockerApi.containers(selectedServer, true, function (result) {
             if (!page.selectedServer || page.selectedServer.url !== selectedServer.url)
+                return;
+            if (page.selectedResource === "Logs")
                 return;
 
             if (result.success) {
@@ -1018,170 +1062,13 @@ Item {
         }
     }
 
-    // ------------------------------------------------------------------
-    // Container log handling
-    // ------------------------------------------------------------------
-    function updateContainerLogs(id, text, append) {
-        if (!id)
-            return;
-    
-        if (!append) {
-            page.pendingContainerLogs[id] = "";
-            page.logText = "";
-            logUpdateTimer.stop();
-            return;
-        }
-    
-        if (text === undefined || text === null || text === "")
-            return;
-    
-        const pending = page.pendingContainerLogs;
-        pending[id] = String(pending[id] || "") + String(text);
-    
-        if (!logUpdateTimer.running)
-            logUpdateTimer.start();
-    }
-    
-    function flushPendingContainerLogs() {
-        const pending = page.pendingContainerLogs;
-        const id = page.logsContainerId;
-    
-        if (!id || pending[id] === undefined)
-            return;
-    
-        const incoming = String(pending[id] || "");
-    
-        // Clear this container's pending data.
-        delete pending[id];
-    
-        if (!incoming)
-            return;
-    
-        const maxLogCharacters = 250000;
-    
-        let updatedLogs = page.logText + incoming;
-    
-        if (updatedLogs.length > maxLogCharacters)
-            updatedLogs = updatedLogs.slice(-maxLogCharacters);
-    
-        page.logText = updatedLogs;
-    }
-
-    function stopLogStream() {
-        const requestId = page.activeLogStreamId;
-    
-        // Clear ownership before asking C++ to stop.
-        page.activeLogStreamId = "";
-        page.activeLogContainerId = "";
-        page.activeLogServerUrl = "";
-    
-        if (requestId && page.unixSocketBridge)
-            DockerApi.stopContainerLogs(page.unixSocketBridge, requestId);
-    }
-
-
-    function startLogStream(id) {
-        const server = page.selectedServer;
-    
-        if (!server || !id || !page.logsPageOpen ||
-            page.logsContainerId !== id) {
-            return;
-        }
-    
-        if (page.activeLogStreamId &&
-            page.activeLogContainerId === id &&
-            page.activeLogServerUrl === server.url) {
-            return;
-        }
-    
-        page.stopLogStream();
-        page.logStreamError = "";
-        page.updateContainerLogs(id, "", false);
-    
-        const requestId = DockerApi.streamContainerLogs(
-            server,
-            id,
-            page.unixSocketBridge,
-    
-            // New log data received.
-            function(entry) {
-                if (!page.logsPageOpen ||
-                    page.logsContainerId !== id ||
-                    !page.selectedServer ||
-                    page.selectedServer.url !== server.url) {
-                    return;
-                }
-    
-                page.updateContainerLogs(id, entry.data, true);
-            },
-    
-            // Stream finished or failed.
-            function(result) {
-                if (page.activeLogContainerId !== id ||
-                    page.activeLogServerUrl !== server.url) {
-                    return;
-                }
-    
-                page.activeLogStreamId = "";
-                page.activeLogContainerId = "";
-                page.activeLogServerUrl = "";
-    
-                if (!result.success)
-                    page.logStreamError = result.error ||
-                        "Log stream ended unexpectedly";
-            }
-        );
-    
-        if (requestId) {
-            page.activeLogStreamId = requestId;
-            page.activeLogContainerId = id;
-            page.activeLogServerUrl = server.url;
-        } else {
-            page.logStreamError = "Could not start container log stream";
-        }
-    }
-
-    function openLogs(container) {
-        if (!container || !page.selectedServer)
-            return;
-    
-        page.stopLogStream();
-    
-        page.logsContainerId = container.Id;
-        page.logsContainerName = ContainerData.containerName(container);
-        page.logsPageOpen = true;
-    
-        page.logText = "";
-        page.logStreamError = "";
-        page.pendingContainerLogs = ({});
-    
-        page.startLogStream(container.Id);
-    }
-    
-    function closeLogs() {
-        page.stopLogStream();
-    
-        page.logsPageOpen = false;
-        page.logsContainerId = "";
-        page.logsContainerName = "";
-        page.logText = "";
-        page.logStreamError = "";
-        page.pendingContainerLogs = ({});
-    
-        logUpdateTimer.stop();
-    }
-
     function toggleExpanded(container) {
         if (page.expandedId === container.Id) {
-            page.stopLogStream();
             page.expandedId = "";
             return;
         }
 
-        page.stopLogStream();
-
         page.expandedId = container.Id;
-        page.logStreamError = "";
 
         const server = page.selectedServer;
 
@@ -1236,19 +1123,14 @@ Item {
         repeat: true
 
         onTriggered: {
+            if (page.selectedResource === "Logs")
+                return;
+        
             if (page.selectedResource === "")
                 page.refreshContainers(true);
             else
                 page.refreshCurrentResource();
         }
-    }
-
-    Timer {
-        id: logUpdateTimer
-        interval: 50
-        repeat: false
-    
-        onTriggered: page.flushPendingContainerLogs()
     }
 
     Timer {
@@ -1292,7 +1174,6 @@ Item {
         target: page.configuration
 
         function onServersChanged() {
-            page.stopLogStream();
             page.selectedServer = null;
             page.selectedResource = "";
             page.expandedId = "";
@@ -1311,21 +1192,20 @@ Item {
     Connections {
         target: page
     
-        function onLogsPageOpenChanged() {
-            if (!page.logsPageOpen)
-                page.stopLogStream();
-        }
-    
         function onSelectedResourceChanged() {
             if (page.selectedResource !== "") {
-                page.stopLogStream();
                 page.pendingStatsQueue = [];
                 page.statsServer = null;
                 statsRefreshTimer.stop();
+    
+                if (page.selectedResource === "Logs") {
+                    page.pendingResourceLoad = null;
+                    resourceRequestStartTimer.stop();
+                }
             }
         }
     }
 
     Component.onCompleted: loadServers()
-    Component.onDestruction: stopLogStream()
+    Component.onDestruction: {}
 }

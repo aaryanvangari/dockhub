@@ -58,7 +58,12 @@ QQC2.Frame {
                         QQC2.ToolTip.text: Shared.Strings.logs
                         QQC2.ToolTip.visible: hovered
                     
-                        onClicked: controller.openLogs(modelData)
+                        onClicked: {
+                            controller.openResource("Logs", false, {
+                                id: modelData.Id,
+                                name: ContainerData.containerName(modelData)
+                            });
+                        }
                     }
                     PlasmaComponents.ToolButton {
                         icon.name: ContainerData.isRunning(modelData) ? IconNames.containerStop : IconNames.containerStart
