@@ -1,6 +1,6 @@
 # DockHub
 
-DockHub is a KDE Plasma applet for managing multiple Docker server instances from a single desktop dashboard. It lets you connect to local and remote Docker daemons, monitor containers, images, networks and volumes, and view Docker events directly from your desktop.
+[DockHub](https://dockhub.opensquares.in) is a KDE Plasma applet for managing multiple Docker server instances from a single desktop dashboard. It lets you connect to local and remote Docker daemons, monitor containers, images, networks and volumes, and view Docker events directly from your desktop.
 
 ## Screenshots
 
@@ -10,6 +10,12 @@ DockHub is a KDE Plasma applet for managing multiple Docker server instances fro
   <img src="contents/screenshots/Container_Expanded.png" alt="DockHub - Container Expanded" width="400">
   <img src="contents/screenshots/Image_Expanded.png" alt="DockHub - Image Expanded" width="400">
 </p>
+
+## Videos
+
+### Logs Streaming
+
+[Logs_Streaming.mp4](https://github.com/user-attachments/assets/fccd59c2-dfb3-4472-a28a-a299537ed949)
 
 ## Features
 
