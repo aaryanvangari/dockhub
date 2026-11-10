@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   release:
-    name: Build and publish PassForge
+    name: Build and publish DockHub
     runs-on: ubuntu-26.04
 
     steps:
