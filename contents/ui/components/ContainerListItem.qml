@@ -30,6 +30,7 @@ QQC2.Frame {
         Item {
             Layout.fillWidth: true
             implicitHeight: rowContent.implicitHeight
+            visible: !controller.configuration.compactLayout
             MouseArea {
                 anchors.fill: parent
                 onClicked: controller.toggleExpanded(modelData)
@@ -183,6 +184,107 @@ QQC2.Frame {
                                 opacity: 0.9
                             }
                         }
+                    }
+                }
+            }
+        }
+        Item {
+            Layout.fillWidth: true
+            implicitHeight: rowContentCompact.implicitHeight
+            visible: controller.configuration.compactLayout
+            MouseArea {
+                anchors.fill: parent
+                onClicked: controller.toggleExpanded(modelData)
+                cursorShape: Qt.PointingHandCursor
+            }
+            ColumnLayout {
+                id: rowContentCompact
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                spacing: 3
+                RowLayout {
+                    Layout.fillWidth: true
+                    RowLayout {
+                        Layout.minimumWidth: 0
+                        Layout.preferredWidth: 1
+                        Layout.horizontalStretchFactor: 20
+                        PlasmaComponents.Label {
+                            Layout.fillWidth: true
+                            text: ContainerData.containerName(modelData)
+                            color: ContainerData.isRunning(modelData) ? Kirigami.Theme.positiveTextColor : Kirigami.Theme.negativeTextColor
+                            font.bold: true
+                            elide: Text.ElideRight
+                        }
+                    }
+                    RowLayout {
+                        spacing: 4
+                        Kirigami.Icon {
+                            source: IconNames.cpu
+                            Layout.preferredWidth: 20
+                            Layout.preferredHeight: 20
+                        }
+                        PlasmaComponents.Label {
+                            text: ContainerData.cpu(modelData)
+                            elide: Text.ElideRight
+                            Layout.fillWidth: true
+                            opacity: 0.9
+                        }
+                    }
+                    RowLayout {
+                        spacing: 4
+                        Kirigami.Icon {
+                            source: IconNames.memory
+                            Layout.preferredWidth: 20
+                            Layout.preferredHeight: 20
+                        }
+                        PlasmaComponents.Label {
+                            text: ContainerData.memory(modelData) + " (" + ContainerData.memoryPercent(modelData) + ")"
+                            elide: Text.ElideRight
+                            Layout.fillWidth: true
+                            opacity: 0.9
+                        }
+                    }
+                    RowLayout {
+                        spacing: 4
+                        MouseArea {
+                            Layout.preferredWidth: 24
+                            Layout.preferredHeight: 24
+                            hoverEnabled: true
+                            cursorShape: Qt.ArrowCursor
+                        
+                            Kirigami.Icon {
+                                anchors.fill: parent
+                                source: IconNames.containerStatus
+                                color: modelData.State === Shared.Strings.runningLower
+                                       ? Kirigami.Theme.positiveTextColor
+                                       : Kirigami.Theme.negativeTextColor
+                            }
+                        
+                            QQC2.ToolTip.text: modelData.State + " - " + ContainerData.field(modelData.Status)
+                            QQC2.ToolTip.visible: controller.configuration.compactLayout && containsMouse
+                        }
+                    }
+                    PlasmaComponents.ToolButton {
+                        visible: ContainerData.isRunning(modelData)
+                        icon.name: IconNames.logs
+                    
+                        QQC2.ToolTip.text: Shared.Strings.logs
+                        QQC2.ToolTip.visible: hovered
+                    
+                        onClicked: {
+                            controller.openResource("Logs", false, {
+                                id: modelData.Id,
+                                name: ContainerData.containerName(modelData)
+                            });
+                        }
+                    }
+                    PlasmaComponents.ToolButton {
+                        icon.name: ContainerData.isRunning(modelData) ? IconNames.containerStop : IconNames.containerStart
+                        display: QQC2.AbstractButton.TextBesideIcon
+                        QQC2.ToolTip.text: ContainerData.isRunning(modelData) ? Shared.Strings.stopContainer : Shared.Strings.startContainer
+                        QQC2.ToolTip.visible: hovered
+                        onClicked: controller.setContainerState(modelData, !ContainerData.isRunning(modelData))
                     }
                 }
             }
