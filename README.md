@@ -150,7 +150,7 @@ SSH connections and a dedicated DockHub Agent are not currently supported. They 
 ### From KDE Store
 
 1. Open Discover or visit the KDE Store.
-2. Search for **DockHub**.
+2. Search for **[DockHub](https://store.kde.org/p/2381533/)**.
 3. Select DockHub and install it.
 
 ### From Source
