@@ -18,10 +18,11 @@ var serverConnected = "network-connect";
 var serverDisconnected = "network-disconnect";
 var server = "network-server-symbolic";
 
-var container = "application-x-executable";
+var container = "folder-docker-symbolic";
 var containerStart = "media-playback-start";
 var containerStop = "media-playback-stop";
 var containerDetails = "dialog-information";
+var containerStatus = "info"
 var healthy = "colors-chromagreen";
 var unhealthy = "colors-chromared";
 var legendHealthy = "love-symbolic";
@@ -30,7 +31,7 @@ var favorite = "emblem-favorite-symbolic";
 
 var stack = "view-list-icons";
 var volume = "disk-quota";
-var image = "kpackagekit-updates";
+var image = "tools-media-optical-burn-image";
 var network = "network-wired-activated";
 var networkWired = "network-wired";
 var logs = "kde-im-log-viewer";
