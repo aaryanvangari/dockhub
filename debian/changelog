@@ -1,3 +1,10 @@
+dockhub (2.1.0-1) unstable; urgency=medium
+
+  * Compact layout in server dashboard
+  * Settings entry to enable compact layout for containers
+  
+ -- Aaryan Vangari <aaryanvangari@gmail.com>  Mon, 11 Nov 2026 11:20:00 +0530
+
 dockhub (2.0.0-1) unstable; urgency=medium
 
   * Logs streaming using unix sockets and http.
