@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import org.kde.plasma.components 3.0 as PlasmaComponents
 import org.kde.kirigami as Kirigami
+import org.kde.plasma.plasmoid
 
 Rectangle {
     property string iconName
@@ -10,7 +11,7 @@ Rectangle {
     signal activated
 
     Layout.fillWidth: true
-    implicitHeight: 54
+    implicitHeight: Plasmoid.configuration.compactLayout ? 38 : 54
     radius: 7
     color: Kirigami.Theme.alternateBackgroundColor
     border.color: Qt.alpha(Kirigami.Theme.textColor, 0.2)

@@ -15,6 +15,7 @@ Kirigami.ScrollablePage {
     property alias cfg_showServerVolumes: serverVolumesCheck.checked
     property alias cfg_servers: serializedServers.text
     property alias cfg_logSize: logSizeComboBox.currentIndex
+    property alias cfg_compactLayout: compactLayoutCheck.checked
 
     property int cfg_updateIntervalDefault: 30
     property int cfg_serverOverviewRefreshIntervalDefault: 45
@@ -26,6 +27,7 @@ Kirigami.ScrollablePage {
     property int cfg_logSizeDefault: 1
     property string cfg_connectionTypeDefault: "[]"
     property string cfg_connectionType: ""
+    property bool cfg_compactLayoutDefault : false
 
     readonly property string generalLabel: i18n("General")
     readonly property string refreshDashboardEveryLabel: i18n("Refresh dashboard every")
@@ -44,6 +46,8 @@ Kirigami.ScrollablePage {
     readonly property string logSizeMedium: i18n("Medium")
     readonly property string logSizeLarge: i18n("Large")
     readonly property string logsLabel: i18n("Logs")
+    readonly property string containersLabel: i18n("Containers")
+    readonly property string compactLayoutLabel: i18n("Compact Layout")
 
     ColumnLayout {
         anchors.left: parent.left
@@ -88,6 +92,21 @@ Kirigami.ScrollablePage {
 
                 valueFromText: function(text) {
                     return parseInt(text);
+                }
+            }
+
+            Kirigami.Separator {
+                Kirigami.FormData.isSection: true
+                Kirigami.FormData.label: page.containersLabel
+            }
+
+            RowLayout {
+                Kirigami.FormData.label: " "
+                spacing: Kirigami.Units.largeSpacing
+
+                QQC2.CheckBox {
+                    id: compactLayoutCheck
+                    text: page.compactLayoutLabel
                 }
             }
 
