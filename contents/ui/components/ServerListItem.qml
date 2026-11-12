@@ -37,6 +37,7 @@ QQC2.ItemDelegate {
                     source: modelData.online ? IconNames.serverConnected : IconNames.serverDisconnected
                     Layout.preferredWidth: 20
                     Layout.preferredHeight: 20
+                    color: modelData.online ? Kirigami.Theme.positiveTextColor : Kirigami.Theme.negativeTextColor
                 }
                 PlasmaComponents.Label {
                     text: modelData.name
@@ -52,186 +53,19 @@ QQC2.ItemDelegate {
                 }
             }
 
-            ColumnLayout {
-                Layout.fillWidth: true
-                visible: modelData.online
-                spacing: 1
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 8
-                    ColumnLayout {
-                        visible: Number(Plasmoid.configuration.serverEntryColumns) === 3
-                        Layout.fillWidth: true
-                        Layout.minimumWidth: 0
-                        Layout.preferredWidth: 1
-                        Layout.horizontalStretchFactor: 37
-                        spacing: 2
-                        Components.ServerMetric {
-                            iconName: IconNames.operatingSystem
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.operatingSystem, delegateRoot.modelData.operatingSystem)
-                            tooltipEnabled: true
-                        }
-                        Components.ServerMetric {
-                            iconName: IconNames.kernelVersion
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.kernelVersion, delegateRoot.modelData.kernelVersion)
-                            tooltipEnabled: true
-                        }
-                        Components.ServerMetric {
-                            iconName: IconNames.memory
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.totalMemory, delegateRoot.modelData.totalMemory)
-                            tooltipEnabled: true
-                        }
-                        Components.ServerMetric {
-                            iconName: IconNames.dockerRootDir
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.dockerRootDir, delegateRoot.modelData.dockerRootDir)
-                            tooltipEnabled: true
-                        }
-                        Components.ServerMetric {
-                            iconName: IconNames.driver
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.driver, delegateRoot.modelData.driver)
-                        }
-                    }
-                    ColumnLayout {
-                        visible: Number(Plasmoid.configuration.serverEntryColumns) === 3
-                        Layout.fillWidth: true
-                        Layout.minimumWidth: 0
-                        Layout.preferredWidth: 1
-                        Layout.horizontalStretchFactor: 30
-                        spacing: 2
-                        Components.ServerMetric {
-                            iconName: IconNames.serverVersion
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.serverVersion, delegateRoot.modelData.serverVersion)
-                        }
-                        Components.ServerMetric {
-                            iconName: IconNames.apiVersion
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.apiVersion, delegateRoot.modelData.apiVersion)
-                        }
-                        Components.ServerMetric {
-                            iconName: IconNames.minApiVersion
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.minApiVersion, delegateRoot.modelData.minApiVersion)
-                        }
-                        Components.ServerMetric {
-                            iconName: IconNames.cpuMetric
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.cores, delegateRoot.modelData.cores)
-                        }
-                        Components.ServerMetric {
-                            visible: Plasmoid.configuration.showServerImages
-                            iconName: IconNames.image
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.images, delegateRoot.modelData.images)
-                        }
-                    }
-                    ColumnLayout {
-                        visible: Number(Plasmoid.configuration.serverEntryColumns) === 3
-                        Layout.fillWidth: true
-                        Layout.minimumWidth: 0
-                        Layout.preferredWidth: 1
-                        Layout.horizontalStretchFactor: 33
-                        spacing: 2
-                        Components.ServerMetric {
-                            iconName: IconNames.server
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.nodes, delegateRoot.modelData.nodes)
-                        }
-                        Components.ServerMetric {
-                            iconName: IconNames.architecture
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.architecture, delegateRoot.modelData.architecture)
-                        }
-                        Components.ServerMetric {
-                            visible: Plasmoid.configuration.showServerVolumes
-                            iconName: IconNames.volume
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.volumes, delegateRoot.modelData.volumes)
-                        }
-                        Components.ContainerSummaryMetric {
-                            runningCount: delegateRoot.modelData.running
-                            totalCount: delegateRoot.modelData.containers
-                        }
-                        Components.ServerMetric {
-                            iconName: IconNames.logDriver
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.logDriver, delegateRoot.modelData.logDriver)
-                        }
-                    }
-
-                    ColumnLayout {
-                        visible: Number(Plasmoid.configuration.serverEntryColumns) === 2
-                        Layout.fillWidth: true
-                        Layout.minimumWidth: 0
-                        Layout.preferredWidth: 1
-                        spacing: 2
-                        Components.ServerMetric {
-                            iconName: IconNames.operatingSystem
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.operatingSystem, delegateRoot.modelData.operatingSystem)
-                            tooltipEnabled: true
-                        }
-                        Components.ServerMetric {
-                            iconName: IconNames.kernelVersion
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.kernelVersion, delegateRoot.modelData.kernelVersion)
-                            tooltipEnabled: true
-                        }
-                        Components.ServerMetric {
-                            iconName: IconNames.dockerRootDir
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.dockerRootDir, delegateRoot.modelData.dockerRootDir)
-                            tooltipEnabled: true
-                        }
-                        Components.ServerMetric {
-                            iconName: IconNames.memory
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.totalMemory, delegateRoot.modelData.totalMemory)
-                            tooltipEnabled: true
-                        }
-                        Components.ServerMetric {
-                            iconName: IconNames.serverVersion
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.serverVersion, delegateRoot.modelData.serverVersion)
-                        }
-                        Components.ServerMetric {
-                            iconName: IconNames.apiVersion
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.apiVersion, delegateRoot.modelData.apiVersion)
-                        }
-                        Components.ServerMetric {
-                            iconName: IconNames.minApiVersion
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.minApiVersion, delegateRoot.modelData.minApiVersion)
-                        }
-                    }
-                    ColumnLayout {
-                        visible: Number(Plasmoid.configuration.serverEntryColumns) === 2
-                        Layout.fillWidth: true
-                        Layout.minimumWidth: 0
-                        Layout.preferredWidth: 1
-                        spacing: 2
-                        Components.ServerMetric {
-                            iconName: IconNames.cpuMetric
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.cores, delegateRoot.modelData.cores)
-                        }
-                        Components.ServerMetric {
-                            iconName: IconNames.architecture
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.architecture, delegateRoot.modelData.architecture)
-                        }
-                        Components.ServerMetric {
-                            iconName: IconNames.server
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.nodes, delegateRoot.modelData.nodes)
-                        }
-                        Components.ServerMetric {
-                            iconName: IconNames.driver
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.driver, delegateRoot.modelData.driver)
-                        }
-                        Components.ServerMetric {
-                            iconName: IconNames.logDriver
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.logDriver, delegateRoot.modelData.logDriver)
-                        }
-                        Components.ServerMetric {
-                            visible: Plasmoid.configuration.showServerImages
-                            iconName: IconNames.image
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.images, delegateRoot.modelData.images)
-                        }
-                        Components.ServerMetric {
-                            visible: Plasmoid.configuration.showServerVolumes
-                            iconName: IconNames.volume
-                            metricText: Shared.Strings.valueLabel(Shared.Strings.volumes, delegateRoot.modelData.volumes)
-                        }
-                        Components.ContainerSummaryMetric {
-                            runningCount: delegateRoot.modelData.running
-                            totalCount: delegateRoot.modelData.containers
-                        }
-                    }
-                }
+            Components.IconsLayout {
+                modelData: delegateRoot.modelData
+                visible: Number(Plasmoid.configuration.serverLayout) === 0
+            }
+            
+            Components.TwoColumnLayout {
+                modelData: delegateRoot.modelData
+                visible: Number(Plasmoid.configuration.serverLayout) === 1
+            }
+            
+            Components.ThreeColumnLayout {
+                modelData: delegateRoot.modelData
+                visible: Number(Plasmoid.configuration.serverLayout) === 2
             }
 
             PlasmaComponents.Label {

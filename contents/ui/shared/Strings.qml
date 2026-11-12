@@ -145,6 +145,7 @@ QtObject {
     readonly property string found: i18n("found")
     readonly property string of: i18n("of")
     readonly property string page: i18n("Page")
+    readonly property string more: i18n("More")
 
     function valueLabel(label, value) {
         return label + ": " + String(value);
