@@ -10,17 +10,16 @@ Kirigami.ScrollablePage {
     property alias cfg_updateInterval: updateIntervalSpin.value
     property alias cfg_serverOverviewRefreshInterval: serverOverviewRefreshSpin.value
     property alias cfg_usageInterval: usageIntervalSpin.value
-    property alias cfg_serverEntryColumns: serverListColumns.value
     property alias cfg_showServerImages: serverImagesCheck.checked
     property alias cfg_showServerVolumes: serverVolumesCheck.checked
     property alias cfg_servers: serializedServers.text
     property alias cfg_logSize: logSizeComboBox.currentIndex
     property alias cfg_compactLayout: compactLayoutCheck.checked
+    property alias cfg_serverLayout: serverLayoutComboBox.currentIndex
 
     property int cfg_updateIntervalDefault: 30
     property int cfg_serverOverviewRefreshIntervalDefault: 45
     property int cfg_usageIntervalDefault: 5
-    property int cfg_serverEntryColumnsDefault: 2
     property bool cfg_showServerImagesDefault: false
     property bool cfg_showServerVolumesDefault: false
     property string cfg_serversDefault: "[]"
@@ -28,6 +27,7 @@ Kirigami.ScrollablePage {
     property string cfg_connectionTypeDefault: "[]"
     property string cfg_connectionType: ""
     property bool cfg_compactLayoutDefault : false
+    property int cfg_serverLayoutDefault: 0
 
     readonly property string generalLabel: i18n("General")
     readonly property string refreshDashboardEveryLabel: i18n("Refresh dashboard every")
@@ -35,8 +35,6 @@ Kirigami.ScrollablePage {
     readonly property string refreshUsageEveryLabel: i18n("Refresh usage every")
     readonly property string secondsSuffix: i18n(" seconds")
     readonly property string serverLabel: i18n("Server")
-    readonly property string serverOverviewColumnsLabel: i18n("Server overview")
-    readonly property string columnsSuffix: i18n("columns")
     readonly property string extraServerCallsNote: i18n("Showing Images and Volumes adds API calls to each server overview refresh.")
     readonly property string imagesLabel: i18n("Images")
     readonly property string volumesLabel: i18n("Volumes")
@@ -48,6 +46,10 @@ Kirigami.ScrollablePage {
     readonly property string logsLabel: i18n("Logs")
     readonly property string containersLabel: i18n("Containers")
     readonly property string compactLayoutLabel: i18n("Compact Layout")
+    readonly property string serverLayoutLabel: i18n("Server Layout")
+    readonly property string serverLayoutTwoColumns: i18n("2 Columns")
+    readonly property string serverLayoutThreeColumns: i18n("3 Columns")
+    readonly property string serverLayoutIcons: i18n("Overview")
 
     ColumnLayout {
         anchors.left: parent.left
@@ -131,16 +133,15 @@ Kirigami.ScrollablePage {
                 }
             }
 
-            QQC2.SpinBox {
-                id: serverListColumns
-                Kirigami.FormData.label: page.serverOverviewColumnsLabel
-                from: 2
-                to: 3
-                editable: false
+            QQC2.ComboBox {
+                id: serverLayoutComboBox
+                Kirigami.FormData.label: page.serverLayoutLabel
 
-                textFromValue: function(value) {
-                    return String(value) + " " + page.columnsSuffix;
-                }
+                model: [
+                    page.serverLayoutIcons,
+                    page.serverLayoutTwoColumns,
+                    page.serverLayoutThreeColumns   
+                ]
             }
 
             RowLayout {

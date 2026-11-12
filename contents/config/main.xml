@@ -15,9 +15,6 @@
   <entry name="usageInterval" type="Int">
     <default>5</default>
   </entry>
-  <entry name="serverEntryColumns" type="Int">
-    <default>2</default>
-  </entry>
   <entry name="showServerImages" type="Bool">
     <default>false</default>
   </entry>
@@ -35,6 +32,9 @@
   </entry>
   <entry name="compactLayout" type="Bool">
     <default>false</default>
+  </entry>
+  <entry name="serverLayout" type="Bool">
+    <default>1</default>
   </entry>
 </group>
 
