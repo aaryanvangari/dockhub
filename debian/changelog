@@ -1,3 +1,11 @@
+dockhub (2.2.0-1) unstable; urgency=medium
+
+  * New Icon Layout for servers list
+  * Settings entry to select multiple layouts for servers list
+  * More apt icons for entities
+  
+ -- Aaryan Vangari <aaryanvangari@gmail.com>  Mon, 12 Nov 2026 20:20:00 +0530
+
 dockhub (2.1.0-1) unstable; urgency=medium
 
   * Compact layout in server dashboard
