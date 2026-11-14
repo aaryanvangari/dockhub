@@ -66,6 +66,8 @@ qt_add_qml_module(dockhub
     SOURCES
         src/UnixSocketBridge.h
         src/UnixSocketBridge.cpp
+        src/SshTunnelManager.h
+        src/SshTunnelManager.cpp
 )
 
 target_include_directories(dockhub

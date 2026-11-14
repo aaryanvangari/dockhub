@@ -12,6 +12,7 @@ Item {
 
     property var configuration
     property var unixSocketBridge
+    property var sshTunnelManager
 
     property var servers: []
     property var selectedServer: null
@@ -59,20 +60,50 @@ Item {
 
 
     function loadServers() {
+        // Stop tunnels belonging to the previous configuration.
+        if (page.sshTunnelManager)
+            page.sshTunnelManager.stopAllTunnels();
+    
         try {
             const configured = JSON.parse(page.configuration.servers || "[]");
             const connConfigured = JSON.parse(page.configuration.connectionType || "[]");
-
-            page.servers = configured.filter(function (s) {
-                return s.enabled && s.name && s.host;
-            }).map(function (s, idx) {
-                const connType = (connConfigured[idx] || {}).connectionType || "http";
-
-                return {
+    
+            const loadedServers = [];
+    
+            // Preserve the original index when accessing connection settings.
+            for (let i = 0; i < configured.length; ++i) {
+                const s = configured[i] || {};
+                const c = connConfigured[i] || {};
+    
+                const connType = c.connectionType || "http";
+    
+                // Disabled servers are skipped, but their indexes are preserved.
+                if (s.enabled === false || !s.name)
+                    continue;
+    
+                // HTTP and socket connections require a host/path.
+                // SSH connections use their separate SSH configuration.
+                if (connType !== "ssh" && !s.host)
+                    continue;
+    
+                loadedServers.push({
+                    serverId: "dockhub-server-" + i,
+    
                     name: s.name,
-                    url: s.host,
+                    url: connType === "ssh" ? "" : s.host,
                     apiPrefix: "",
                     connectionType: connType,
+    
+                    // SSH configuration
+                    sshHost: c.sshHost || "",
+                    sshPort: Number(c.sshPort) || 22,
+                    sshUser: c.sshUser || "",
+                    sshIdentityFile: c.sshIdentityFile || "",
+                    sshSocketPath: c.sshSocketPath || "",
+    
+                    connectionReady: connType !== "ssh",
+                    connectionError: "",
+    
                     online: false,
                     running: 0,
                     containers: 0,
@@ -90,14 +121,67 @@ Item {
                     serverVersion: "—",
                     apiVersion: "—",
                     minApiVersion: "—"
-                };
-            });
-
+                });
+            }
+    
+            page.servers = loadedServers;
+    
+            // Start SSH tunnels after the server list has been populated.
+            for (let i = 0; i < loadedServers.length; ++i) {
+                const server = loadedServers[i];
+    
+                if (server.connectionType !== "ssh")
+                    continue;
+    
+                if (!page.sshTunnelManager) {
+                    page.updateSshServer(server.serverId, {
+                        connectionError: "SSH tunnel manager is unavailable."
+                    });
+                    continue;
+                }
+    
+                page.sshTunnelManager.startTunnel(
+                    server.serverId,
+                    server.sshHost,
+                    server.sshPort,
+                    server.sshUser,
+                    server.sshIdentityFile,
+                    server.sshSocketPath
+                );
+            }
+    
+            // HTTP and socket servers can be refreshed immediately.
+            // SSH servers will be refreshed when their tunnels are ready.
             page.refreshDashboard();
+    
         } catch (e) {
             page.servers = [];
             page.errorText = Shared.Strings.couldNotReadSavedServerSettings;
+            console.error("[DockHub] Could not load servers:", e);
         }
+    }
+
+    function updateSshServer(serverId, values) {
+        const updated = page.servers.slice();
+    
+        const index = updated.findIndex(function(server) {
+            return server.serverId === serverId;
+        });
+    
+        if (index < 0)
+            return false;
+    
+        updated[index] = Object.assign({}, updated[index], values);
+    
+        page.servers = updated;
+    
+        // Keep the selected server reference synchronized.
+        if (page.selectedServer &&
+            page.selectedServer.serverId === serverId) {
+            page.selectedServer = updated[index];
+        }
+    
+        return true;
     }
 
     function updateDashboardServer(index, url, values) {
@@ -231,6 +315,9 @@ Item {
         for (let i = 0; i < servers.length; ++i) {
             const server = servers[i];
             const serverIndex = i;
+            // SSH servers must have an established tunnel before API requests.
+            if (!server.connectionReady || !server.url)
+                continue;
 
             DockerApi.info(server, function (result) {
                 if (result.success && result.data) {
@@ -300,6 +387,12 @@ Item {
     }
 
     function openServer(server) {
+        if (server.connectionType === "ssh" &&
+            !server.connectionReady) {
+            page.errorText = server.connectionError ||
+                             "SSH tunnel is not ready yet.";
+            return;
+        }
         selectedServer = server;
         logsContainerId = "";
         logsContainerName = "";
@@ -1206,6 +1299,59 @@ Item {
         }
     }
 
+    Connections {
+        target: page.sshTunnelManager
+    
+        function onTunnelStarted(serverId, localUrl) {
+            console.log("[DockHub SSH] Tunnel ready:", serverId, localUrl);
+    
+            const updated = page.updateSshServer(serverId, {
+                url: localUrl,
+                connectionReady: true,
+                connectionError: "",
+                online: false
+            });
+    
+            if (!updated) {
+                // The server was removed while its tunnel was starting.
+                page.sshTunnelManager.stopTunnel(serverId);
+                return;
+            }
+    
+            // Now the server behaves like a normal HTTP Docker endpoint.
+            page.refreshDashboard();
+    
+            if (page.selectedServer &&
+                page.selectedServer.serverId === serverId) {
+                page.refreshContainers(true);
+            }
+        }
+    
+        function onTunnelFailed(serverId, error) {
+            console.error("[DockHub SSH] Tunnel failed:", serverId, error);
+    
+            page.updateSshServer(serverId, {
+                url: "",
+                connectionReady: false,
+                connectionError: error,
+                online: false
+            });
+    
+            if (page.selectedServer &&
+                page.selectedServer.serverId === serverId) {
+                page.errorText = error;
+            }
+        }
+    
+        function onTunnelStopped(serverId) {
+            console.log("[DockHub SSH] Tunnel stopped:", serverId);
+        }
+    
+        function onTunnelOutput(serverId, output) {
+            console.log("[DockHub SSH]", serverId, output.trim());
+        }
+    }
+    
     Component.onCompleted: loadServers()
     Component.onDestruction: {}
 }
