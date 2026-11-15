@@ -151,328 +151,366 @@ Item {
             }
         }
 
-        ColumnLayout {
-            visible: imageRow.expanded
+        Loader {
             Layout.fillWidth: true
-            spacing: 8
-            PlasmaComponents.Label {
-                Layout.fillWidth: true
-                visible: Boolean(modelData.inspectLoading)
-                text: Shared.Strings.loadingImageDetails
-            }
-            PlasmaComponents.Label {
-                Layout.fillWidth: true
-                visible: Boolean(modelData.inspectError)
-                text: modelData.inspectError || ""
-                color: Kirigami.Theme.negativeTextColor
-                wrapMode: Text.Wrap
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
-                visible: Boolean(modelData.inspect)
-                implicitHeight: overview.implicitHeight + 20
-                radius: 7
-                color: Kirigami.Theme.alternateBackgroundColor
+            active: imageRow.expanded
+            visible: active
+        
+            sourceComponent: Component {
                 ColumnLayout {
-                    id: overview
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.margins: 10
-                    spacing: 6
+                    width: parent.width
+                    spacing: 8
+        
                     PlasmaComponents.Label {
                         Layout.fillWidth: true
-                        text: Shared.Strings.imageInformation
-                        font.bold: true
+                        visible: Boolean(modelData.inspectLoading)
+                        text: Shared.Strings.loadingImageDetails
                     }
-                    GridLayout {
+                    PlasmaComponents.Label {
                         Layout.fillWidth: true
-                        columns: 2
-                        columnSpacing: 12
-                        rowSpacing: 4
-                        PlasmaComponents.Label {
-                            text: Shared.Strings.fullId
-                            opacity: 0.7
-                        }
-                        RowLayout {
-                            Layout.fillWidth: true
+                        visible: Boolean(modelData.inspectError)
+                        text: modelData.inspectError || ""
+                        color: Kirigami.Theme.negativeTextColor
+                        wrapMode: Text.Wrap
+                    }
+        
+                    Rectangle {
+                        Layout.fillWidth: true
+                        visible: Boolean(modelData.inspect)
+                        implicitHeight: overview.implicitHeight + 20
+                        radius: 7
+                        color: Kirigami.Theme.alternateBackgroundColor
+                        ColumnLayout {
+                            id: overview
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            anchors.margins: 10
+                            spacing: 6
                             PlasmaComponents.Label {
                                 Layout.fillWidth: true
-                                text: details.Id || modelData.Id || "—"
-                                elide: Text.ElideMiddle
-                            }
-                            PlasmaComponents.ToolButton {
-                                icon.name: IconNames.copy
-                                display: QQC2.AbstractButton.IconOnly
-                                QQC2.ToolTip.text: Shared.Strings.copyFullImageId
-                                QQC2.ToolTip.visible: hovered
-                                onClicked: clipboard.content = String(details.Id || modelData.Id || "")
-                            }
-                        }
-                        PlasmaComponents.Label {
-                            text: Shared.Strings.size
-                            opacity: 0.7
-                        }
-                        PlasmaComponents.Label {
-                            Layout.fillWidth: true
-                            text: ContainerData.formatBytes(details.Size === undefined ? modelData.Size : details.Size)
-                        }
-                        PlasmaComponents.Label {
-                            text: Shared.Strings.created
-                            opacity: 0.7
-                        }
-                        PlasmaComponents.Label {
-                            Layout.fillWidth: true
-                            text: details.Created || "—"
-                            wrapMode: Text.Wrap
-                        }
-                        PlasmaComponents.Label {
-                            text: Shared.Strings.build
-                            opacity: 0.7
-                        }
-                        PlasmaComponents.Label {
-                            Layout.fillWidth: true
-                            text: details.DockerVersion || "—"
-                            wrapMode: Text.Wrap
-                        }
-                        PlasmaComponents.Label {
-                            text: Shared.Strings.command
-                            opacity: 0.7
-                        }
-                        PlasmaComponents.Label {
-                            Layout.fillWidth: true
-                            text: (config.Cmd || []).join(" ") || "—"
-                            wrapMode: Text.Wrap
-                        }
-                        PlasmaComponents.Label {
-                            text: Shared.Strings.entryPoint
-                            opacity: 0.7
-                        }
-                        PlasmaComponents.Label {
-                            Layout.fillWidth: true
-                            text: (config.Entrypoint || []).join(" ") || "—"
-                            wrapMode: Text.Wrap
-                        }
-                    }
-                }
-            }
-
-            ColumnLayout {
-                visible: Boolean(modelData.inspect)
-                Layout.fillWidth: true
-                DisclosureHeader {
-                    title: Shared.Strings.countTitle(Shared.Strings.labels, labels.length)
-                    iconName: IconNames.tag
-                    expanded: imageRow.labelsExpanded
-                    copyText: imageRow.labelsText
-                    clipboard: imageRow.clipboard
-                    onToggleRequested: {
-                        imageRow.labelsExpanded = !imageRow.labelsExpanded;
-                        if (imageRow.labelsExpanded) {
-                            imageRow.environmentExpanded = false;
-                            imageRow.layersExpanded = false;
-                        }
-                    }
-                }
-                Rectangle {
-                    Layout.fillWidth: true
-                    visible: imageRow.labelsExpanded
-                    implicitHeight: labelsContent.implicitHeight + 20
-                    radius: 7
-                    color: Kirigami.Theme.alternateBackgroundColor
-                    ColumnLayout {
-                        id: labelsContent
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.margins: 10
-                        spacing: 4
-                        PlasmaComponents.Label {
-                            visible: labels.length === 0
-                            text: Shared.Strings.noLabels
-                        }
-                        Repeater {
-                            model: labels
-                            delegate: ColumnLayout {
-                                required property var modelData
-                                Layout.fillWidth: true
-                                PlasmaComponents.Label {
-                                    Layout.fillWidth: true
-                                    text: modelData.key
-                                    font.bold: true
-                                    wrapMode: Text.Wrap
-                                }
-                                PlasmaComponents.Label {
-                                    Layout.fillWidth: true
-                                    text: modelData.value
-                                    wrapMode: Text.Wrap
-                                }
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 1
-                                    color: Qt.alpha(Kirigami.Theme.textColor, 0.15)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            ColumnLayout {
-                visible: Boolean(modelData.inspect)
-                Layout.fillWidth: true
-                DisclosureHeader {
-                    title: Shared.Strings.countTitle(Shared.Strings.environment, environment.length)
-                    iconName: IconNames.settings
-                    expanded: imageRow.environmentExpanded
-                    copyText: imageRow.environmentText
-                    clipboard: imageRow.clipboard
-                    onToggleRequested: {
-                        imageRow.environmentExpanded = !imageRow.environmentExpanded;
-                        if (imageRow.environmentExpanded) {
-                            imageRow.labelsExpanded = false;
-                            imageRow.layersExpanded = false;
-                        }
-                    }
-                }
-                Rectangle {
-                    Layout.fillWidth: true
-                    visible: imageRow.environmentExpanded
-                    implicitHeight: environmentContent.implicitHeight + 20
-                    radius: 7
-                    color: Kirigami.Theme.alternateBackgroundColor
-                    ColumnLayout {
-                        id: environmentContent
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.margins: 10
-                        spacing: 4
-                        PlasmaComponents.Label {
-                            visible: environment.length === 0
-                            text: Shared.Strings.noEnvironmentVariables
-                        }
-                        Repeater {
-                            model: environment
-                            delegate: ColumnLayout {
-                                required property var modelData
-                                Layout.fillWidth: true
-                                PlasmaComponents.Label {
-                                    Layout.fillWidth: true
-                                    text: modelData.key
-                                    font.bold: true
-                                    wrapMode: Text.Wrap
-                                }
-                                PlasmaComponents.Label {
-                                    Layout.fillWidth: true
-                                    text: modelData.value
-                                    wrapMode: Text.Wrap
-                                }
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 1
-                                    color: Qt.alpha(Kirigami.Theme.textColor, 0.15)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            ColumnLayout {
-                visible: Boolean(modelData.inspect)
-                Layout.fillWidth: true
-                DisclosureHeader {
-                    title: Shared.Strings.countTitle(Shared.Strings.imageHistory, modelData.historyLoading ? "…" : history.length)
-                    iconName: IconNames.events
-                    expanded: imageRow.layersExpanded
-                    copyText: imageRow.historyText
-                    clipboard: imageRow.clipboard
-                    onToggleRequested: {
-                        imageRow.layersExpanded = !imageRow.layersExpanded;
-                        if (imageRow.layersExpanded) {
-                            imageRow.labelsExpanded = false;
-                            imageRow.environmentExpanded = false;
-                        }
-                    }
-                }
-                Rectangle {
-                    Layout.fillWidth: true
-                    visible: imageRow.layersExpanded
-                    implicitHeight: historyContent.implicitHeight + 20
-                    radius: 7
-                    color: Kirigami.Theme.alternateBackgroundColor
-                    ColumnLayout {
-                        id: historyContent
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.margins: 10
-                        spacing: 4
-                        PlasmaComponents.Label {
-                            visible: Boolean(modelData.historyLoading)
-                            text: Shared.Strings.loadingImageHistory
-                        }
-                        PlasmaComponents.Label {
-                            visible: Boolean(modelData.historyError)
-                            text: modelData.historyError || ""
-                            color: Kirigami.Theme.negativeTextColor
-                            wrapMode: Text.Wrap
-                        }
-                        PlasmaComponents.Label {
-                            visible: !modelData.historyLoading && !modelData.historyError && history.length === 0
-                            text: Shared.Strings.noImageHistory
-                        }
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 12
-                            PlasmaComponents.Label {
-                                Layout.preferredWidth: historyContent.width * 0.15
-                                Layout.minimumWidth: historyContent.width * 0.15
-                                Layout.maximumWidth: historyContent.width * 0.15
-                                text: Shared.Strings.size
+                                text: Shared.Strings.imageInformation
                                 font.bold: true
                             }
-                            PlasmaComponents.Label {
+                            GridLayout {
                                 Layout.fillWidth: true
-                                text: Shared.Strings.layer
-                                font.bold: true
-                            }
-                        }
-                        Repeater {
-                            model: history
-                            delegate: ColumnLayout {
-                                required property var modelData
-                                Layout.fillWidth: true
-                                spacing: 4
+                                columns: 2
+                                columnSpacing: 12
+                                rowSpacing: 4
+                                PlasmaComponents.Label {
+                                    text: Shared.Strings.fullId
+                                    opacity: 0.7
+                                }
                                 RowLayout {
                                     Layout.fillWidth: true
-                                    spacing: 12
-                                    ColumnLayout {
-                                        Layout.preferredWidth: historyContent.width * 0.15
-                                        Layout.minimumWidth: historyContent.width * 0.15
-                                        Layout.maximumWidth: historyContent.width * 0.15
-                                        PlasmaComponents.Label {
-                                            Layout.fillWidth: true
-                                            text: imageRow.historySize(modelData.Size)
-                                            wrapMode: Text.Wrap
-                                        }
-                                    }
-                                    ColumnLayout {
+                                    PlasmaComponents.Label {
                                         Layout.fillWidth: true
-                                        Layout.minimumWidth: 0
+                                        text: details.Id || modelData.Id || "—"
+                                        elide: Text.ElideMiddle
+                                    }
+                                    PlasmaComponents.ToolButton {
+                                        icon.name: IconNames.copy
+                                        display: QQC2.AbstractButton.IconOnly
+                                        QQC2.ToolTip.text: Shared.Strings.copyFullImageId
+                                        QQC2.ToolTip.visible: hovered
+                                        onClicked: clipboard.content = String(details.Id || modelData.Id || "")
+                                    }
+                                }
+                                PlasmaComponents.Label {
+                                    text: Shared.Strings.size
+                                    opacity: 0.7
+                                }
+                                PlasmaComponents.Label {
+                                    Layout.fillWidth: true
+                                    text: ContainerData.formatBytes(details.Size === undefined ? modelData.Size : details.Size)
+                                }
+                                PlasmaComponents.Label {
+                                    text: Shared.Strings.created
+                                    opacity: 0.7
+                                }
+                                PlasmaComponents.Label {
+                                    Layout.fillWidth: true
+                                    text: details.Created || "—"
+                                    wrapMode: Text.Wrap
+                                }
+                                PlasmaComponents.Label {
+                                    text: Shared.Strings.build
+                                    opacity: 0.7
+                                }
+                                PlasmaComponents.Label {
+                                    Layout.fillWidth: true
+                                    text: details.DockerVersion || "—"
+                                    wrapMode: Text.Wrap
+                                }
+                                PlasmaComponents.Label {
+                                    text: Shared.Strings.command
+                                    opacity: 0.7
+                                }
+                                PlasmaComponents.Label {
+                                    Layout.fillWidth: true
+                                    text: (config.Cmd || []).join(" ") || "—"
+                                    wrapMode: Text.Wrap
+                                }
+                                PlasmaComponents.Label {
+                                    text: Shared.Strings.entryPoint
+                                    opacity: 0.7
+                                }
+                                PlasmaComponents.Label {
+                                    Layout.fillWidth: true
+                                    text: (config.Entrypoint || []).join(" ") || "—"
+                                    wrapMode: Text.Wrap
+                                }
+                            }
+                        }
+                    }
+        
+                    ColumnLayout {
+                        visible: Boolean(modelData.inspect)
+                        Layout.fillWidth: true
+                        DisclosureHeader {
+                            title: Shared.Strings.countTitle(Shared.Strings.labels, labels.length)
+                            iconName: IconNames.tag
+                            expanded: imageRow.labelsExpanded
+                            copyText: imageRow.labelsText
+                            clipboard: imageRow.clipboard
+                            onToggleRequested: {
+                                imageRow.labelsExpanded = !imageRow.labelsExpanded;
+                                if (imageRow.labelsExpanded) {
+                                    imageRow.environmentExpanded = false;
+                                    imageRow.layersExpanded = false;
+                                }
+                            }
+                        }
+                        Loader {
+                            Layout.fillWidth: true
+                            active: imageRow.labelsExpanded
+                            visible: active
+                        
+                            sourceComponent: Component {
+                                Rectangle {
+                                    width: parent.width
+                                    implicitHeight: labelsContent.implicitHeight + 20
+                                    radius: 7
+                                    color: Kirigami.Theme.alternateBackgroundColor
+                        
+                                    ColumnLayout {
+                                        id: labelsContent
+                                        anchors.left: parent.left
+                                        anchors.right: parent.right
+                                        anchors.top: parent.top
+                                        anchors.margins: 10
+                                        spacing: 4
+                        
                                         PlasmaComponents.Label {
-                                            Layout.fillWidth: true
-                                            text: modelData.CreatedBy || "—"
-                                            wrapMode: Text.Wrap
+                                            visible: imageRow.labels.length === 0
+                                            text: Shared.Strings.noLabels
+                                        }
+                        
+                                        Repeater {
+                                            model: imageRow.labels
+                        
+                                            delegate: ColumnLayout {
+                                                required property var modelData
+                                                Layout.fillWidth: true
+                        
+                                                PlasmaComponents.Label {
+                                                    Layout.fillWidth: true
+                                                    text: modelData.key
+                                                    font.bold: true
+                                                    wrapMode: Text.Wrap
+                                                }
+                        
+                                                PlasmaComponents.Label {
+                                                    Layout.fillWidth: true
+                                                    text: modelData.value
+                                                    wrapMode: Text.Wrap
+                                                }
+                        
+                                                Rectangle {
+                                                    Layout.fillWidth: true
+                                                    Layout.preferredHeight: 1
+                                                    color: Qt.alpha(Kirigami.Theme.textColor, 0.15)
+                                                }
+                                            }
                                         }
                                     }
                                 }
+                            }
+                        }
+                    }
+        
+                    ColumnLayout {
+                        visible: Boolean(modelData.inspect)
+                        Layout.fillWidth: true
+                        DisclosureHeader {
+                            title: Shared.Strings.countTitle(Shared.Strings.environment, environment.length)
+                            iconName: IconNames.settings
+                            expanded: imageRow.environmentExpanded
+                            copyText: imageRow.environmentText
+                            clipboard: imageRow.clipboard
+                            onToggleRequested: {
+                                imageRow.environmentExpanded = !imageRow.environmentExpanded;
+                                if (imageRow.environmentExpanded) {
+                                    imageRow.labelsExpanded = false;
+                                    imageRow.layersExpanded = false;
+                                }
+                            }
+                        }
+                        Loader {
+                            Layout.fillWidth: true
+                            active: imageRow.environmentExpanded
+                            visible: active
+                        
+                            sourceComponent: Component {
                                 Rectangle {
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: 1
-                                    color: Qt.alpha(Kirigami.Theme.textColor, 0.15)
+                                    visible: imageRow.environmentExpanded
+                                    implicitHeight: environmentContent.implicitHeight + 20
+                                    radius: 7
+                                    color: Kirigami.Theme.alternateBackgroundColor
+                                    ColumnLayout {
+                                        id: environmentContent
+                                        anchors.left: parent.left
+                                        anchors.right: parent.right
+                                        anchors.top: parent.top
+                                        anchors.margins: 10
+                                        spacing: 4
+                                        PlasmaComponents.Label {
+                                            visible: environment.length === 0
+                                            text: Shared.Strings.noEnvironmentVariables
+                                        }
+                                        Repeater {
+                                            model: environment
+                                            delegate: ColumnLayout {
+                                                required property var modelData
+                                                Layout.fillWidth: true
+                                                PlasmaComponents.Label {
+                                                    Layout.fillWidth: true
+                                                    text: modelData.key
+                                                    font.bold: true
+                                                    wrapMode: Text.Wrap
+                                                }
+                                                PlasmaComponents.Label {
+                                                    Layout.fillWidth: true
+                                                    text: modelData.value
+                                                    wrapMode: Text.Wrap
+                                                }
+                                                Rectangle {
+                                                    Layout.fillWidth: true
+                                                    Layout.preferredHeight: 1
+                                                    color: Qt.alpha(Kirigami.Theme.textColor, 0.15)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+        
+                    ColumnLayout {
+                        visible: Boolean(modelData.inspect)
+                        Layout.fillWidth: true
+                        DisclosureHeader {
+                            title: Shared.Strings.countTitle(Shared.Strings.imageHistory, modelData.historyLoading ? "…" : history.length)
+                            iconName: IconNames.events
+                            expanded: imageRow.layersExpanded
+                            copyText: imageRow.historyText
+                            clipboard: imageRow.clipboard
+                            onToggleRequested: {
+                                imageRow.layersExpanded = !imageRow.layersExpanded;
+                                if (imageRow.layersExpanded) {
+                                    imageRow.labelsExpanded = false;
+                                    imageRow.environmentExpanded = false;
+                                }
+                            }
+                        }
+                        Loader {
+                            Layout.fillWidth: true
+                            active: imageRow.layersExpanded
+                            visible: active
+                        
+                            sourceComponent: Component {
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    visible: imageRow.layersExpanded
+                                    implicitHeight: historyContent.implicitHeight + 20
+                                    radius: 7
+                                    color: Kirigami.Theme.alternateBackgroundColor
+                                    ColumnLayout {
+                                        id: historyContent
+                                        anchors.left: parent.left
+                                        anchors.right: parent.right
+                                        anchors.top: parent.top
+                                        anchors.margins: 10
+                                        spacing: 4
+                                        PlasmaComponents.Label {
+                                            visible: Boolean(modelData.historyLoading)
+                                            text: Shared.Strings.loadingImageHistory
+                                        }
+                                        PlasmaComponents.Label {
+                                            visible: Boolean(modelData.historyError)
+                                            text: modelData.historyError || ""
+                                            color: Kirigami.Theme.negativeTextColor
+                                            wrapMode: Text.Wrap
+                                        }
+                                        PlasmaComponents.Label {
+                                            visible: !modelData.historyLoading && !modelData.historyError && history.length === 0
+                                            text: Shared.Strings.noImageHistory
+                                        }
+                                        RowLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 12
+                                            PlasmaComponents.Label {
+                                                Layout.preferredWidth: historyContent.width * 0.15
+                                                Layout.minimumWidth: historyContent.width * 0.15
+                                                Layout.maximumWidth: historyContent.width * 0.15
+                                                text: Shared.Strings.size
+                                                font.bold: true
+                                            }
+                                            PlasmaComponents.Label {
+                                                Layout.fillWidth: true
+                                                text: Shared.Strings.layer
+                                                font.bold: true
+                                            }
+                                        }
+                                        Repeater {
+                                            model: history
+                                            delegate: ColumnLayout {
+                                                required property var modelData
+                                                Layout.fillWidth: true
+                                                spacing: 4
+                                                RowLayout {
+                                                    Layout.fillWidth: true
+                                                    spacing: 12
+                                                    ColumnLayout {
+                                                        Layout.preferredWidth: historyContent.width * 0.15
+                                                        Layout.minimumWidth: historyContent.width * 0.15
+                                                        Layout.maximumWidth: historyContent.width * 0.15
+                                                        PlasmaComponents.Label {
+                                                            Layout.fillWidth: true
+                                                            text: imageRow.historySize(modelData.Size)
+                                                            wrapMode: Text.Wrap
+                                                        }
+                                                    }
+                                                    ColumnLayout {
+                                                        Layout.fillWidth: true
+                                                        Layout.minimumWidth: 0
+                                                        PlasmaComponents.Label {
+                                                            Layout.fillWidth: true
+                                                            text: modelData.CreatedBy || "—"
+                                                            wrapMode: Text.Wrap
+                                                        }
+                                                    }
+                                                }
+                                                Rectangle {
+                                                    Layout.fillWidth: true
+                                                    Layout.preferredHeight: 1
+                                                    color: Qt.alpha(Kirigami.Theme.textColor, 0.15)
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

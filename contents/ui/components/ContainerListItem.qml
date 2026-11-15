@@ -289,10 +289,19 @@ QQC2.Frame {
                 }
             }
         }
-        ContainerDetail {
-            controller: delegateRoot.controller
-            modelData: delegateRoot.modelData
-            clipboard: delegateRoot.clipboard
+        Loader {
+            Layout.fillWidth: true
+        
+            active: controller.expandedId === modelData.Id
+            visible: active
+        
+            sourceComponent: Component {
+                ContainerDetail {
+                    controller: delegateRoot.controller
+                    modelData: delegateRoot.modelData
+                    clipboard: delegateRoot.clipboard
+                }
+            }
         }
     }
 }

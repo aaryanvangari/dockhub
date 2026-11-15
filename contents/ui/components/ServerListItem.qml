@@ -22,6 +22,27 @@ QQC2.ItemDelegate {
     }
     onClicked: controller.openServer(modelData)
 
+    Component {
+        id: iconsLayoutComponent
+        Components.IconsLayout {
+            modelData: delegateRoot.modelData
+        }
+    }
+
+    Component {
+        id: twoColumnLayoutComponent
+        Components.TwoColumnLayout {
+            modelData: delegateRoot.modelData
+        }
+    }
+
+    Component {
+        id: threeColumnLayoutComponent
+        Components.ThreeColumnLayout {
+            modelData: delegateRoot.modelData
+        }
+    }
+
     contentItem: Item {
         implicitHeight: serverEntryContent.implicitHeight + 20
         ColumnLayout {
@@ -53,19 +74,21 @@ QQC2.ItemDelegate {
                 }
             }
 
-            Components.IconsLayout {
-                modelData: delegateRoot.modelData
-                visible: Number(Plasmoid.configuration.serverLayout) === 0
-            }
-            
-            Components.TwoColumnLayout {
-                modelData: delegateRoot.modelData
-                visible: Number(Plasmoid.configuration.serverLayout) === 1
-            }
-            
-            Components.ThreeColumnLayout {
-                modelData: delegateRoot.modelData
-                visible: Number(Plasmoid.configuration.serverLayout) === 2
+            Loader {
+                id: serverLayoutLoader
+                Layout.fillWidth: true
+                sourceComponent: {
+                    switch (Number(Plasmoid.configuration.serverLayout)) {
+                    case 0:
+                        return iconsLayoutComponent;
+                    case 1:
+                        return twoColumnLayoutComponent;
+                    case 2:
+                        return threeColumnLayoutComponent;
+                    default:
+                        return iconsLayoutComponent;
+                    }
+                }
             }
 
             PlasmaComponents.Label {
