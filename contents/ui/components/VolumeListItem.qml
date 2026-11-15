@@ -70,163 +70,171 @@ Item {
             }
         }
 
-        ColumnLayout {
-            visible: volumeRow.expanded
+        Loader {
             Layout.fillWidth: true
-            spacing: 8
-            PlasmaComponents.Label {
-                Layout.fillWidth: true
-                visible: Boolean(modelData.inspectLoading)
-                text: Shared.Strings.loadingVolumeDetails
-            }
-            PlasmaComponents.Label {
-                Layout.fillWidth: true
-                visible: Boolean(modelData.inspectError)
-                text: modelData.inspectError || ""
-                color: Kirigami.Theme.negativeTextColor
-                wrapMode: Text.Wrap
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: infoContent.implicitHeight + 20
-                radius: 7
-                color: Kirigami.Theme.alternateBackgroundColor
+            active: volumeRow.expanded
+            visible: active
+        
+            sourceComponent: Component {
                 ColumnLayout {
-                    id: infoContent
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.margins: 10
-                    spacing: 6
+                    width: parent.width
+                    spacing: 8
+        
                     PlasmaComponents.Label {
                         Layout.fillWidth: true
-                        text: Shared.Strings.volumeInformation
-                        font.bold: true
-                    }
-                    GridLayout {
-                        Layout.fillWidth: true
-                        columns: 2
-                        columnSpacing: 12
-                        rowSpacing: 4
-                        PlasmaComponents.Label {
-                            text: Shared.Strings.idLabel
-                            opacity: 0.7
-                        }
-                        RowLayout {
-                            Layout.fillWidth: true
-                            PlasmaComponents.Label {
-                                Layout.fillWidth: true
-                                text: details.Name || modelData.Name || modelData.name || "—"
-                                elide: Text.ElideMiddle
-                            }
-                            PlasmaComponents.ToolButton {
-                                icon.name: IconNames.copy
-                                display: QQC2.AbstractButton.IconOnly
-                                QQC2.ToolTip.text: Shared.Strings.copyVolumeId
-                                QQC2.ToolTip.visible: hovered
-                                onClicked: clipboard.content = String(details.Name || modelData.Name || modelData.name || "")
-                            }
-                        }
-                        PlasmaComponents.Label {
-                            text: Shared.Strings.created
-                            opacity: 0.7
-                        }
-                        PlasmaComponents.Label {
-                            Layout.fillWidth: true
-                            text: details.CreatedAt || modelData.CreatedAt || "—"
-                            wrapMode: Text.Wrap
-                        }
-                        PlasmaComponents.Label {
-                            text: Shared.Strings.mountPath
-                            opacity: 0.7
-                        }
-                        PlasmaComponents.Label {
-                            Layout.fillWidth: true
-                            text: details.Mountpoint || modelData.Mountpoint || "—"
-                            wrapMode: Text.WrapAnywhere
-                        }
-                        PlasmaComponents.Label {
-                            text: Shared.Strings.driver
-                            opacity: 0.7
-                        }
-                        PlasmaComponents.Label {
-                            Layout.fillWidth: true
-                            text: details.Driver || modelData.Driver || "—"
-                        }
-                    }
-                }
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: containerContent.implicitHeight + 20
-                radius: 7
-                color: Kirigami.Theme.alternateBackgroundColor
-                ColumnLayout {
-                    id: containerContent
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.margins: 10
-                    spacing: 6
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Kirigami.Icon {
-                            source: IconNames.container
-                            Layout.preferredWidth: 18
-                            Layout.preferredHeight: 18
-                        }
-                        PlasmaComponents.Label {
-                            Layout.fillWidth: true
-                            text: Shared.Strings.containersUsingThisVolume
-                            font.bold: true
-                        }
+                        visible: Boolean(modelData.inspectLoading)
+                        text: Shared.Strings.loadingVolumeDetails
                     }
                     PlasmaComponents.Label {
                         Layout.fillWidth: true
-                        visible: Boolean(modelData.attachedLoading)
-                        text: Shared.Strings.loadingContainerMounts
-                    }
-                    PlasmaComponents.Label {
-                        Layout.fillWidth: true
-                        visible: Boolean(modelData.attachedError)
-                        text: modelData.attachedError || ""
+                        visible: Boolean(modelData.inspectError)
+                        text: modelData.inspectError || ""
                         color: Kirigami.Theme.negativeTextColor
                         wrapMode: Text.Wrap
                     }
-                    PlasmaComponents.Label {
+        
+                    Rectangle {
                         Layout.fillWidth: true
-                        visible: !modelData.attachedLoading && !modelData.attachedError && attachedContainers.length === 0
-                        text: Shared.Strings.noContainersAreUsingThisVolume
-                        opacity: 0.75
-                    }
-                    Repeater {
-                        model: attachedContainers
-                        delegate: ColumnLayout {
-                            required property var modelData
-                            Layout.fillWidth: true
-                            spacing: 4
-                            Rectangle {
+                        implicitHeight: infoContent.implicitHeight + 20
+                        radius: 7
+                        color: Kirigami.Theme.alternateBackgroundColor
+                        ColumnLayout {
+                            id: infoContent
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            anchors.margins: 10
+                            spacing: 6
+                            PlasmaComponents.Label {
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: 1
-                                color: Qt.alpha(Kirigami.Theme.textColor, 0.18)
+                                text: Shared.Strings.volumeInformation
+                                font.bold: true
+                            }
+                            GridLayout {
+                                Layout.fillWidth: true
+                                columns: 2
+                                columnSpacing: 12
+                                rowSpacing: 4
+                                PlasmaComponents.Label {
+                                    text: Shared.Strings.idLabel
+                                    opacity: 0.7
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    PlasmaComponents.Label {
+                                        Layout.fillWidth: true
+                                        text: details.Name || modelData.Name || modelData.name || "—"
+                                        elide: Text.ElideMiddle
+                                    }
+                                    PlasmaComponents.ToolButton {
+                                        icon.name: IconNames.copy
+                                        display: QQC2.AbstractButton.IconOnly
+                                        QQC2.ToolTip.text: Shared.Strings.copyVolumeId
+                                        QQC2.ToolTip.visible: hovered
+                                        onClicked: clipboard.content = String(details.Name || modelData.Name || modelData.name || "")
+                                    }
+                                }
+                                PlasmaComponents.Label {
+                                    text: Shared.Strings.created
+                                    opacity: 0.7
+                                }
+                                PlasmaComponents.Label {
+                                    Layout.fillWidth: true
+                                    text: details.CreatedAt || modelData.CreatedAt || "—"
+                                    wrapMode: Text.Wrap
+                                }
+                                PlasmaComponents.Label {
+                                    text: Shared.Strings.mountPath
+                                    opacity: 0.7
+                                }
+                                PlasmaComponents.Label {
+                                    Layout.fillWidth: true
+                                    text: details.Mountpoint || modelData.Mountpoint || "—"
+                                    wrapMode: Text.WrapAnywhere
+                                }
+                                PlasmaComponents.Label {
+                                    text: Shared.Strings.driver
+                                    opacity: 0.7
+                                }
+                                PlasmaComponents.Label {
+                                    Layout.fillWidth: true
+                                    text: details.Driver || modelData.Driver || "—"
+                                }
+                            }
+                        }
+                    }
+        
+                    Rectangle {
+                        Layout.fillWidth: true
+                        implicitHeight: containerContent.implicitHeight + 20
+                        radius: 7
+                        color: Kirigami.Theme.alternateBackgroundColor
+                        ColumnLayout {
+                            id: containerContent
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            anchors.margins: 10
+                            spacing: 6
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Kirigami.Icon {
+                                    source: IconNames.container
+                                    Layout.preferredWidth: 18
+                                    Layout.preferredHeight: 18
+                                }
+                                PlasmaComponents.Label {
+                                    Layout.fillWidth: true
+                                    text: Shared.Strings.containersUsingThisVolume
+                                    font.bold: true
+                                }
                             }
                             PlasmaComponents.Label {
                                 Layout.fillWidth: true
-                                text: modelData.Name || "—"
-                                font.bold: true
-                                elide: Text.ElideRight
+                                visible: Boolean(modelData.attachedLoading)
+                                text: Shared.Strings.loadingContainerMounts
                             }
-                            RowLayout {
+                            PlasmaComponents.Label {
                                 Layout.fillWidth: true
-                                PlasmaComponents.Label {
+                                visible: Boolean(modelData.attachedError)
+                                text: modelData.attachedError || ""
+                                color: Kirigami.Theme.negativeTextColor
+                                wrapMode: Text.Wrap
+                            }
+                            PlasmaComponents.Label {
+                                Layout.fillWidth: true
+                                visible: !modelData.attachedLoading && !modelData.attachedError && attachedContainers.length === 0
+                                text: Shared.Strings.noContainersAreUsingThisVolume
+                                opacity: 0.75
+                            }
+                            Repeater {
+                                model: attachedContainers
+                                delegate: ColumnLayout {
+                                    required property var modelData
                                     Layout.fillWidth: true
-                                    text: Shared.Strings.mountedAt + ": " + (modelData.Destination || "—")
-                                    elide: Text.ElideRight
-                                }
-                                PlasmaComponents.Label {
-                                    text: Shared.Strings.readOnly + ": " + (modelData.RW ? Shared.Strings.no : Shared.Strings.yes)
+                                    spacing: 4
+                                    Rectangle {
+                                        Layout.fillWidth: true
+                                        Layout.preferredHeight: 1
+                                        color: Qt.alpha(Kirigami.Theme.textColor, 0.18)
+                                    }
+                                    PlasmaComponents.Label {
+                                        Layout.fillWidth: true
+                                        text: modelData.Name || "—"
+                                        font.bold: true
+                                        elide: Text.ElideRight
+                                    }
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        PlasmaComponents.Label {
+                                            Layout.fillWidth: true
+                                            text: Shared.Strings.mountedAt + ": " + (modelData.Destination || "—")
+                                            elide: Text.ElideRight
+                                        }
+                                        PlasmaComponents.Label {
+                                            text: Shared.Strings.readOnly + ": " + (modelData.RW ? Shared.Strings.no : Shared.Strings.yes)
+                                        }
+                                    }
                                 }
                             }
                         }

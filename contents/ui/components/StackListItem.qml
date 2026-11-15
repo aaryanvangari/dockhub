@@ -65,23 +65,30 @@ Item {
                 onClicked: controller.toggleStackExpanded(modelData)
             }
         }
-
-        ColumnLayout {
-            visible: stackRow.expanded
+        Loader {
             Layout.fillWidth: true
-            spacing: 0
-            Repeater {
-                model: modelData.containerItems || []
-                delegate: Item {
-                    required property var modelData
-                    Layout.fillWidth: true
-                    implicitHeight: containerItem.implicitHeight
-                    ContainerListItem {
-                        id: containerItem
-                        width: parent.width
-                        modelData: parent.modelData
-                        controller: stackRow.controller
-                        clipboard: stackRow.clipboard
+            active: stackRow.expanded
+            visible: active
+        
+            sourceComponent: Component {
+                ColumnLayout {
+                    width: parent.width
+                    spacing: 0
+        
+                    Repeater {
+                        model: modelData.containerItems || []
+                        delegate: Item {
+                            required property var modelData
+                            Layout.fillWidth: true
+                            implicitHeight: containerItem.implicitHeight
+                            ContainerListItem {
+                                id: containerItem
+                                width: parent.width
+                                modelData: parent.modelData
+                                controller: stackRow.controller
+                                clipboard: stackRow.clipboard
+                            }
+                        }
                     }
                 }
             }

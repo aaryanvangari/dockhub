@@ -17,18 +17,25 @@ ColumnLayout {
             controller.selectedResource !== ""
     spacing: 8
 
-    ContainerLogsPage {
+    Loader {
         Layout.fillWidth: true
         Layout.fillHeight: true
     
-        visible: controller.selectedResource === "Logs"
-    
-        server: controller.selectedServer
-        containerId: controller.logsContainerId
-        containerName: controller.logsContainerName
-        unixSocketBridge: resourcePage.unixSocketBridge
-        configuration: controller.configuration
         active: controller.selectedResource === "Logs"
+        visible: active
+    
+        sourceComponent: Component {
+            ContainerLogsPage {
+                anchors.fill: parent
+    
+                server: controller.selectedServer
+                containerId: controller.logsContainerId
+                containerName: controller.logsContainerName
+                unixSocketBridge: resourcePage.unixSocketBridge
+                configuration: controller.configuration
+                active: true
+            }
+        }
     }
 
     ColumnLayout {
@@ -76,89 +83,139 @@ ColumnLayout {
             spacing: 0
             model: controller.resourceItems.slice(controller.resourcePage * controller.resourcePageSize, (controller.resourcePage + 1) * controller.resourcePageSize)
             delegate: Item {
+                id: row
+            
                 required property var modelData
+            
                 width: ListView.view.width
-                implicitHeight: controller.selectedResource === "Networks" ? networkItem.implicitHeight : controller.selectedResource === "Images" ? imageItem.implicitHeight : controller.selectedResource === "Stacks" ? stackItem.implicitHeight : controller.selectedResource === "Events" ? eventItem.implicitHeight : controller.selectedResource === "Volumes" ? volumeItem.implicitHeight : standardItem.implicitHeight
-                NetworkListItem {
-                    id: networkItem
+                implicitHeight: rowLoader.implicitHeight
+            
+                Loader {
+                    id: rowLoader
                     width: parent.width
-                    visible: controller.selectedResource === "Networks"
-                    modelData: parent.modelData
-                    controller: resourcePage.controller
-                    clipboard: resourcePage.clipboard
-                }
-                ImageListItem {
-                    id: imageItem
-                    width: parent.width
-                    visible: controller.selectedResource === "Images"
-                    modelData: parent.modelData
-                    controller: resourcePage.controller
-                    clipboard: resourcePage.clipboard
-                }
-                StackListItem {
-                    id: stackItem
-                    width: parent.width
-                    visible: controller.selectedResource === "Stacks"
-                    modelData: parent.modelData
-                    controller: resourcePage.controller
-                    clipboard: resourcePage.clipboard
-                }
-                EventListItem {
-                    id: eventItem
-                    width: parent.width
-                    visible: controller.selectedResource === "Events"
-                    modelData: parent.modelData
-                }
-                VolumeListItem {
-                    id: volumeItem
-                    width: parent.width
-                    visible: controller.selectedResource === "Volumes"
-                    modelData: parent.modelData
-                    controller: resourcePage.controller
-                    clipboard: resourcePage.clipboard
-                }
-                Item {
-                    id: standardItem
-                    width: parent.width
-                    visible: controller.selectedResource !== "Networks" && controller.selectedResource !== "Images" && controller.selectedResource !== "Stacks" && controller.selectedResource !== "Events" && controller.selectedResource !== "Volumes"
-                    implicitHeight: standardContent.implicitHeight + 20
-                    RowLayout {
-                        id: standardContent
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.margins: 10
-                        spacing: 10
-                        Kirigami.Icon {
-                            source: controller.selectedResource === "Stacks" ? IconNames.stack : controller.selectedResource === "Volumes" ? IconNames.volume : IconNames.image
-                            Layout.preferredWidth: 20
-                            Layout.preferredHeight: 20
-                        }
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            Layout.minimumWidth: 0
-                            spacing: 2
-                            PlasmaComponents.Label {
-                                Layout.fillWidth: true
-                                text: controller.resourceName(modelData)
-                                font.bold: true
-                                elide: Text.ElideRight
-                            }
-                            PlasmaComponents.Label {
-                                Layout.fillWidth: true
-                                text: controller.resourceDescription(modelData)
-                                opacity: 0.8
-                                font.pixelSize: 12
-                                elide: Text.ElideRight
-                            }
+            
+                    sourceComponent: {
+                        switch (controller.selectedResource) {
+                        case "Networks":
+                            return networkComponent;
+                        case "Images":
+                            return imageComponent;
+                        case "Stacks":
+                            return stackComponent;
+                        case "Events":
+                            return eventComponent;
+                        case "Volumes":
+                            return volumeComponent;
+                        default:
+                            return standardComponent;
                         }
                     }
-                    Rectangle {
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.bottom: parent.bottom
-                        height: 1
-                        color: Qt.alpha(Kirigami.Theme.textColor, 0.25)
+                }
+            
+                Component {
+                    id: networkComponent
+            
+                    NetworkListItem {
+                        width: row.width
+                        modelData: row.modelData
+                        controller: resourcePage.controller
+                        clipboard: resourcePage.clipboard
+                    }
+                }
+            
+                Component {
+                    id: imageComponent
+            
+                    ImageListItem {
+                        width: row.width
+                        modelData: row.modelData
+                        controller: resourcePage.controller
+                        clipboard: resourcePage.clipboard
+                    }
+                }
+            
+                Component {
+                    id: stackComponent
+            
+                    StackListItem {
+                        width: row.width
+                        modelData: row.modelData
+                        controller: resourcePage.controller
+                        clipboard: resourcePage.clipboard
+                    }
+                }
+            
+                Component {
+                    id: eventComponent
+            
+                    EventListItem {
+                        width: row.width
+                        modelData: row.modelData
+                    }
+                }
+            
+                Component {
+                    id: volumeComponent
+            
+                    VolumeListItem {
+                        width: row.width
+                        modelData: row.modelData
+                        controller: resourcePage.controller
+                        clipboard: resourcePage.clipboard
+                    }
+                }
+            
+                Component {
+                    id: standardComponent
+            
+                    Item {
+                        width: row.width
+                        implicitHeight: standardContent.implicitHeight + 20
+            
+                        RowLayout {
+                            id: standardContent
+            
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            anchors.margins: 10
+                            spacing: 10
+            
+                            Kirigami.Icon {
+                                source: IconNames.image
+                                Layout.preferredWidth: 20
+                                Layout.preferredHeight: 20
+                            }
+            
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                spacing: 2
+            
+                                PlasmaComponents.Label {
+                                    Layout.fillWidth: true
+                                    text: controller.resourceName(row.modelData)
+                                    font.bold: true
+                                    elide: Text.ElideRight
+                                }
+            
+                                PlasmaComponents.Label {
+                                    Layout.fillWidth: true
+                                    text: controller.resourceDescription(row.modelData)
+                                    opacity: 0.8
+                                    font.pixelSize: 12
+                                    elide: Text.ElideRight
+                                }
+                            }
+                        }
+            
+                        Rectangle {
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.bottom: parent.bottom
+                            height: 1
+                            color: Qt.alpha(Kirigami.Theme.textColor, 0.25)
+                        }
                     }
                 }
             }
