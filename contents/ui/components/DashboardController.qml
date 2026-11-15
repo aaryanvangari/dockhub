@@ -21,10 +21,16 @@ Item {
     property var resourceCache: ({})
     property var resourceRequests: ({})
     property var pendingResourceLoad: null
+    
     property var pendingStatsQueue: []
     property var statsServer: null
     property var activeStatsRequests: []
-    readonly property int maxConcurrentStatsRequests: 5
+    property var statsUpdateBuffer: ({})
+    property int statsUpdateCount: 0
+    property int listWideStatsInterval: 5000
+
+    readonly property int maxConcurrentStatsRequests: 3
+    readonly property int statsUpdateBatchSize: 10
 
     property bool resourceLoading: false
     property string resourceError: ""
@@ -387,6 +393,7 @@ Item {
     }
 
     function openServer(server) {
+        page.stopStatsPolling();
         if (server.connectionType === "ssh" &&
             !server.connectionReady) {
             page.errorText = server.connectionError ||
@@ -1085,76 +1092,212 @@ Item {
         }, unixSocketBridge);
     }
 
-    function queueContainerStats(server, containerList) {
-        if (!server || page.selectedResource !== "")
+    function stopStatsPolling() {
+        page.pendingStatsQueue = [];
+        page.statsServer = null;
+        page.statsUpdateBuffer = ({});
+        page.statsUpdateCount = 0;
+    
+        statsRefreshTimer.stop();
+        listWideStatsTimer.stop();
+        expandedStatsTimer.stop();
+    }
+
+    function queueStatsRequest(server, id) {
+        if (!server || !id ||
+            page.selectedResource !== "" ||
+            !page.selectedServer ||
+            page.selectedServer.url !== server.url) {
             return;
+        }
 
-        const sameServer = page.statsServer && page.statsServer.url === server.url;
-
-        if (sameServer && page.pendingStatsQueue.length > 0)
-            return;
-
-        page.statsServer = server;
-
-        page.pendingStatsQueue = containerList.filter(function (container) {
-            if (container.State !== "running")
-                return false;
-
-            return !page.activeStatsRequests.some(function (request) {
-                return request.url === server.url && request.id === container.Id;
-            });
-        }).map(function (container) {
-            return container.Id;
+        // Do not queue a request already in progress.
+        const active = page.activeStatsRequests.some(function(request) {
+            return request.url === server.url && request.id === id;
         });
+
+        if (active)
+            return;
+
+        // Do not queue the same container twice.
+        const queued = page.pendingStatsQueue.some(function(request) {
+            return request.id === id;
+        });
+
+        if (queued)
+            return;
+
+        page.pendingStatsQueue = page.pendingStatsQueue.concat([{
+            id: id
+        }]);
 
         statsRefreshTimer.restart();
     }
 
-    function requestNextContainerStats() {
-        if (!page.selectedServer || page.selectedResource !== "" || !page.statsServer || page.selectedServer.url !== page.statsServer.url) {
+    function queueContainerStats(server, containerList) {
+        listWideStatsTimer.stop();
+        if (!server || page.selectedResource !== "")
+            return;
+
+        if (!page.statsServer ||
+            page.statsServer.url !== server.url) {
             page.pendingStatsQueue = [];
-            page.statsServer = null;
+            page.statsUpdateBuffer = ({});
+            page.statsUpdateCount = 0;
+            page.statsServer = server;
+        }
+
+        const runningContainers = containerList.filter(function(container) {
+            return container.State === "running";
+        });
+
+        // Select the list-wide refresh interval based on server size.
+        page.listWideStatsInterval = runningContainers.length <= 7
+                                        ? 5000
+                                        : Math.max(
+                                            15,
+                                            page.configuration.largeServerStatsInterval || 120
+                                        ) * 1000;
+        for (let i = 0; i < runningContainers.length; ++i)
+            page.queueStatsRequest(server, runningContainers[i].Id);
+    }
+
+    function queueExpandedContainerStats() {
+        if (!page.selectedServer ||
+            page.selectedResource !== "" ||
+            page.expandedId === "") {
             return;
         }
 
+        const container = page.containers.find(function(item) {
+            return item.Id === page.expandedId;
+        });
+
+        if (!container || container.State !== "running")
+            return;
+
+        page.queueStatsRequest(page.selectedServer, container.Id);
+    }
+
+    function flushStatsUpdates() {
+        const ids = Object.keys(page.statsUpdateBuffer);
+
+        if (ids.length === 0)
+            return;
+
+        const updated = page.containers.slice();
+
+        for (let i = 0; i < updated.length; ++i) {
+            const id = updated[i].Id;
+
+            if (page.statsUpdateBuffer[id]) {
+                updated[i] = Object.assign({}, updated[i], {
+                    stats: page.statsUpdateBuffer[id]
+                });
+            }
+        }
+
+        page.statsUpdateBuffer = ({});
+        page.statsUpdateCount = 0;
+
+        page.setContainers(updated);
+    }
+
+    function hasActiveStatsRequests(serverUrl) {
+        return page.activeStatsRequests.some(function(request) {
+            return request.url === serverUrl;
+        });
+    }
+
+    function requestNextContainerStats() {
+        if (!page.selectedServer ||
+            page.selectedResource !== "" ||
+            !page.statsServer ||
+            page.selectedServer.url !== page.statsServer.url) {
+    
+            page.pendingStatsQueue = [];
+            listWideStatsTimer.stop();
+            return;
+        }
+    
         const server = page.statsServer;
-
-        while (page.activeStatsRequests.length < page.maxConcurrentStatsRequests && page.pendingStatsQueue.length > 0) {
-            const id = page.pendingStatsQueue.shift();
-
-            page.activeStatsRequests = page.activeStatsRequests.concat([
-                {
-                    url: server.url,
-                    id: id
-                }
-            ]);
-
-            DockerApi.containerStats(server, id, function (stats) {
-                page.activeStatsRequests = page.activeStatsRequests.filter(function (request) {
+    
+        while (
+            page.activeStatsRequests.length < page.maxConcurrentStatsRequests &&
+            page.pendingStatsQueue.length > 0
+        ) {
+            const queued = page.pendingStatsQueue.shift();
+            const id = queued.id;
+    
+            page.activeStatsRequests = page.activeStatsRequests.concat([{
+                url: server.url,
+                id: id
+            }]);
+    
+            DockerApi.containerStats(server, id, function(result) {
+                page.activeStatsRequests = page.activeStatsRequests.filter(function(request) {
                     return request.url !== server.url || request.id !== id;
                 });
-
-                if (stats.success && page.selectedServer && page.selectedServer.url === server.url && page.selectedResource === "") {
-                    const updated = page.containers.slice();
-
-                    for (let i = 0; i < updated.length; ++i) {
-                        if (updated[i].Id === id) {
-                            updated[i] = Object.assign({}, updated[i], {
-                                stats: stats.data
-                            });
-                        }
+    
+                const stillCurrent =
+                    page.selectedServer &&
+                    page.selectedServer.url === server.url &&
+                    page.selectedResource === "";
+    
+                if (result.success && stillCurrent) {
+                    const containerExists = page.containers.some(function(container) {
+                        return container.Id === id &&
+                               container.State === "running";
+                    });
+    
+                    if (containerExists) {
+                        const buffer = Object.assign({}, page.statsUpdateBuffer);
+                        const isNewUpdate = !buffer[id];
+    
+                        buffer[id] = result.data;
+                        page.statsUpdateBuffer = buffer;
+    
+                        if (isNewUpdate)
+                            ++page.statsUpdateCount;
+    
+                        if (page.statsUpdateCount >= page.statsUpdateBatchSize)
+                            page.flushStatsUpdates();
                     }
-
-                    page.setContainers(updated);
                 }
-
-                if (page.selectedResource === "" && page.selectedServer && page.statsServer && page.selectedServer.url === page.statsServer.url && page.pendingStatsQueue.length > 0) {
+    
+                if (!stillCurrent) {
+                    page.pendingStatsQueue = [];
+                    return;
+                }
+    
+                // More requests remain: continue filling available slots.
+                if (page.pendingStatsQueue.length > 0) {
                     statsRefreshTimer.restart();
+                    return;
+                }
+    
+                // No queued requests remain, but other requests may still
+                // be in flight.
+                if (page.hasActiveStatsRequests(server.url))
+                    return;
+    
+                // The entire cycle has completed. Apply the remaining
+                // partial batch before scheduling the next cycle.
+                page.flushStatsUpdates();
+    
+                // Wait the full polling interval AFTER the cycle completes.
+                if (page.selectedServer &&
+                    page.selectedServer.url === server.url &&
+                    page.selectedResource === "" &&
+                    page.statsServer &&
+                    page.statsServer.url === server.url) {
+    
+                    listWideStatsTimer.start();
                 }
             }, unixSocketBridge);
         }
     }
-
+    
     function toggleExpanded(container) {
         if (page.expandedId === container.Id) {
             page.expandedId = "";
@@ -1165,9 +1308,21 @@ Item {
 
         const server = page.selectedServer;
 
-        DockerApi.inspectContainer(server, container.Id, function (result) {
-            if (!result.success || page.expandedId !== container.Id)
+        if (!server)
+            return;
+
+        if (container.State !== "running")
+            return;
+
+        // Fetch inspect information immediately.
+        DockerApi.inspectContainer(server, container.Id, function(result) {
+            if (!result.success ||
+                !page.selectedServer ||
+                page.selectedServer.url !== server.url ||
+                page.selectedResource !== "" ||
+                page.expandedId !== container.Id) {
                 return;
+            }
 
             const updated = page.containers.slice();
 
@@ -1182,6 +1337,9 @@ Item {
 
             page.setContainers(updated);
         }, unixSocketBridge);
+
+        // Fetch stats immediately as well.
+        page.queueStatsRequest(server, container.Id);
     }
 
 
@@ -1220,7 +1378,7 @@ Item {
                 return;
         
             if (page.selectedResource === "")
-                page.refreshContainers(true);
+                page.refreshContainers(false, false);
             else
                 page.refreshCurrentResource();
         }
@@ -1256,11 +1414,40 @@ Item {
         }
     }
 
+    // Starts queued stats requests, respecting the global concurrency limit.
     Timer {
         id: statsRefreshTimer
         interval: 50
         repeat: false
         onTriggered: page.requestNextContainerStats()
+    }
+
+    // Refresh stats for all running containers.
+    Timer {
+        id: listWideStatsTimer
+    
+        interval: page.listWideStatsInterval
+        repeat: false
+    
+        onTriggered: {
+            if (page.selectedServer &&
+                page.selectedResource === "")
+                page.queueContainerStats(page.selectedServer, page.containers);
+        }
+    }
+
+    // Refresh only the currently expanded container.
+    Timer {
+        id: expandedStatsTimer
+
+        interval: 5000
+        repeat: true
+
+        running: page.selectedServer !== null &&
+                 page.selectedResource === "" &&
+                 page.expandedId !== ""
+
+        onTriggered: page.queueExpandedContainerStats()
     }
 
     Connections {
@@ -1284,18 +1471,20 @@ Item {
 
     Connections {
         target: page
-    
+
         function onSelectedResourceChanged() {
             if (page.selectedResource !== "") {
-                page.pendingStatsQueue = [];
-                page.statsServer = null;
-                statsRefreshTimer.stop();
-    
+                page.stopStatsPolling();
+        
                 if (page.selectedResource === "Logs") {
                     page.pendingResourceLoad = null;
                     resourceRequestStartTimer.stop();
                 }
             }
+        }
+
+        function onSelectedServerChanged() {
+            page.stopStatsPolling();
         }
     }
 
@@ -1353,5 +1542,12 @@ Item {
     }
     
     Component.onCompleted: loadServers()
-    Component.onDestruction: {}
+    Component.onDestruction: {
+        statsRefreshTimer.stop();
+        listWideStatsTimer.stop();
+        expandedStatsTimer.stop();
+
+        page.pendingStatsQueue = [];
+        page.statsUpdateBuffer = ({});
+    }
 }

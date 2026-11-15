@@ -36,6 +36,9 @@
   <entry name="serverLayout" type="Int">
     <default>1</default>
   </entry>
+  <entry name="largeServerStatsInterval" type="Int">
+      <default>120</default>
+  </entry>
 </group>
 
 </kcfg>
