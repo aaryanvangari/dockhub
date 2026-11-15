@@ -34,6 +34,8 @@ Kirigami.ScrollablePage {
     property int cfg_serverLayoutDefault: 0
     property string cfg_connectionTypeDefault: "[]"
     property string cfg_serversDefault: "[]"
+    property int cfg_largeServerStatsInterval: 1
+    property int cfg_largeServerStatsIntervalDefault: 120
 
     readonly property string serversLabel: i18n("Servers")
     readonly property string serverLabel: i18n("Server")

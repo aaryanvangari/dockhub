@@ -16,6 +16,7 @@ Kirigami.ScrollablePage {
     property alias cfg_logSize: logSizeComboBox.currentIndex
     property alias cfg_compactLayout: compactLayoutCheck.checked
     property alias cfg_serverLayout: serverLayoutComboBox.currentIndex
+    property alias cfg_largeServerStatsInterval: largeServerStatsIntervalSpin.value
 
     property int cfg_updateIntervalDefault: 30
     property int cfg_serverOverviewRefreshIntervalDefault: 45
@@ -28,6 +29,7 @@ Kirigami.ScrollablePage {
     property string cfg_connectionType: ""
     property bool cfg_compactLayoutDefault : false
     property int cfg_serverLayoutDefault: 0
+    property int cfg_largeServerStatsIntervalDefault: 120
 
     readonly property string generalLabel: i18n("General")
     readonly property string refreshDashboardEveryLabel: i18n("Refresh dashboard every")
@@ -50,6 +52,8 @@ Kirigami.ScrollablePage {
     readonly property string serverLayoutTwoColumns: i18n("2 Columns")
     readonly property string serverLayoutThreeColumns: i18n("3 Columns")
     readonly property string serverLayoutIcons: i18n("Overview")
+    readonly property string largeServerStatsIntervalLabel: i18n("Refresh stats for large servers every")
+    readonly property string largeServerStatsWarning: i18n("Less frequent updates reduce network traffic and server load,\n but container statistics may become less current.\n Expanding a container still refreshes its statistics every 5 seconds.")
 
     ColumnLayout {
         anchors.left: parent.left
@@ -110,6 +114,32 @@ Kirigami.ScrollablePage {
                     id: compactLayoutCheck
                     text: page.compactLayoutLabel
                 }
+            }
+
+            QQC2.SpinBox {
+                id: largeServerStatsIntervalSpin
+                Kirigami.FormData.label: page.largeServerStatsIntervalLabel
+            
+                from: 15
+                to: 3600
+                editable: true
+            
+                textFromValue: function(value) {
+                    return value + page.secondsSuffix;
+                }
+            
+                valueFromText: function(text) {
+                    return parseInt(text);
+                }
+            }
+            
+            QQC2.Label {
+                text: page.largeServerStatsWarning
+                font: Kirigami.Theme.smallFont
+                wrapMode: Text.WordWrap
+                opacity: 0.75
+            
+                Layout.fillWidth: true
             }
 
             Kirigami.Separator {
