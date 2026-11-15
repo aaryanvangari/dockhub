@@ -10,7 +10,17 @@ var unixRequestSequence = 0;
 var unixStreamSequence = 0;
 
 function isLocalServer(server) {
-    const url = String(server && server.url || "");
+    if (!server)
+        return false;
+
+    if (server.connectionType === "socket")
+        return true;
+
+    if (server.connectionType === "http" ||
+        server.connectionType === "ssh")
+        return false;
+
+    const url = String(server.url || "");
     return !/^https?:\/\//i.test(url);
 }
 

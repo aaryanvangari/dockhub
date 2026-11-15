@@ -15,9 +15,30 @@ PlasmoidItem {
     Plasmoid.icon: IconNames.app
     property alias sharedClipboard: clipboard
     property alias sharedUnixSocketBridge: unixSocketBridge
+    property alias sharedSshTunnelManager: sshTunnelManager
 
     UnixSocketBridge {
         id: unixSocketBridge
+    }
+
+    SshTunnelManager {
+        id: sshTunnelManager
+    
+        onTunnelStarted: function(serverId, localUrl) {
+            console.log("[DockHub SSH] Tunnel ready:", serverId, localUrl)
+        }
+    
+        onTunnelFailed: function(serverId, error) {
+            console.error("[DockHub SSH] Tunnel failed:", serverId, error)
+        }
+    
+        onTunnelStopped: function(serverId) {
+            console.log("[DockHub SSH] Tunnel stopped:", serverId)
+        }
+    
+        onTunnelOutput: function(serverId, output) {
+            console.log("[DockHub SSH]", serverId, output)
+        }
     }
 
     KQuickControlsAddons.Clipboard {
@@ -41,6 +62,7 @@ PlasmoidItem {
             id: page
             configuration: Plasmoid.configuration
             unixSocketBridge: root.sharedUnixSocketBridge
+            sshTunnelManager: root.sharedSshTunnelManager
         }
         RowLayout {
             id: topBar

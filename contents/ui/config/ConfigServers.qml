@@ -26,6 +26,12 @@ Kirigami.ScrollablePage {
     property bool cfg_showServerImagesDefault: false
     property bool cfg_showServerVolumes: false
     property bool cfg_showServerVolumesDefault: false
+    property bool cfg_compactLayout: false
+    property bool cfg_compactLayoutDefault: false
+    property int cfg_logSize: 1
+    property int cfg_logSizeDefault: 1
+    property int cfg_serverLayout: 0
+    property int cfg_serverLayoutDefault: 0
 
     property int cfg_logSize: 1
     property int cfg_logSizeDefault: 1
@@ -49,6 +55,13 @@ Kirigami.ScrollablePage {
     readonly property string connectionHttp: i18n("HTTP / TCP")
     readonly property string connectionSocket: i18n("Unix Socket")
 
+    readonly property string connectionSsh: i18n("SSH")
+    readonly property string sshHostLabel: i18n("SSH Host")
+    readonly property string sshPortLabel: i18n("SSH Port")
+    readonly property string sshUserLabel: i18n("SSH Username")
+    readonly property string sshIdentityFileLabel: i18n("SSH Identity File")
+    readonly property string sshSocketPathLabel: i18n("Remote Docker Socket")
+
     function serverNumber(number) {
         return serverLabel + " " + String(number);
     }
@@ -66,7 +79,13 @@ Kirigami.ScrollablePage {
                     name: (serverEntries[i] || {}).name || "",
                     host: (serverEntries[i] || {}).host || "",
                     active: (serverEntries[i] || {}).enabled !== false,
-                    connectionType: (connEntries[i] || {}).connectionType || "http"
+                    connectionType: (connEntries[i] || {}).connectionType || "http",
+                
+                    sshHost: (connEntries[i] || {}).sshHost || "",
+                    sshPort: Number((connEntries[i] || {}).sshPort) || 22,
+                    sshUser: (connEntries[i] || {}).sshUser || "",
+                    sshIdentityFile: (connEntries[i] || {}).sshIdentityFile || "",
+                    sshSocketPath: (connEntries[i] || {}).sshSocketPath || ""
                 });
             }
         } catch (e) {
@@ -88,7 +107,13 @@ Kirigami.ScrollablePage {
             });
 
             connEntries.push({
-                connectionType: entry.connectionType || "http"
+                connectionType: entry.connectionType || "http",
+            
+                sshHost: entry.sshHost,
+                sshPort: entry.sshPort,
+                sshUser: entry.sshUser,
+                sshIdentityFile: entry.sshIdentityFile,
+                sshSocketPath: entry.sshSocketPath
             });
         }
 
@@ -113,6 +138,12 @@ Kirigami.ScrollablePage {
             required property string host
             required property string connectionType
             required property bool active
+
+            required property string sshHost
+            required property int sshPort
+            required property string sshUser
+            required property string sshIdentityFile
+            required property string sshSocketPath
 
             Layout.fillWidth: true
             spacing: Kirigami.Units.smallSpacing
@@ -160,78 +191,226 @@ Kirigami.ScrollablePage {
 
                         model: [
                             rootPage.connectionHttp,
-                            rootPage.connectionSocket
+                            rootPage.connectionSocket,
+                            rootPage.connectionSsh
                         ]
-
-                        currentIndex: serverDelegate.connectionType === "http" ? 0 : 1
-
+                        
+                        currentIndex: {
+                            switch (serverDelegate.connectionType) {
+                            case "socket":
+                                return 1;
+                            case "ssh":
+                                return 2;
+                            default:
+                                return 0;
+                            }
+                        }
+                        
                         onActivated: function(comboIndex) {
+                            const types = ["http", "socket", "ssh"];
+                        
                             serversModel.setProperty(
                                 serverDelegate.index,
                                 "connectionType",
-                                comboIndex === 0 ? "http" : "socket"
+                                types[comboIndex]
                             );
-
+                        
                             rootPage.saveServers();
                         }
                     }
                 }
             }
 
-            // Second row: Host/socket path, enabled and delete.
+            // HTTP / Unix socket connection details.
             RowLayout {
                 Layout.fillWidth: true
                 spacing: Kirigami.Units.smallSpacing
-
+                visible: serverDelegate.connectionType !== "ssh"
+            
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 2
-
+            
                     QQC2.Label {
                         text: serverDelegate.connectionType === "socket"
                               ? rootPage.socketPathLabel
                               : rootPage.hostUrlLabel
                     }
-
+            
                     QQC2.TextField {
                         Layout.fillWidth: true
-
+            
                         placeholderText: serverDelegate.connectionType === "socket"
                                          ? "/run/user/1000/docker.sock"
                                          : "http://host:2375"
-
+            
                         text: serverDelegate.host
-
+            
                         inputMethodHints: serverDelegate.connectionType === "http"
                                           ? Qt.ImhUrlCharactersOnly
                                           : Qt.ImhNone
-
+            
                         onTextEdited: {
                             serversModel.setProperty(serverDelegate.index, "host", text);
                             rootPage.saveServers();
                         }
                     }
                 }
-
+            }
+            
+            // SSH host and port.
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Kirigami.Units.smallSpacing
+                visible: serverDelegate.connectionType === "ssh"
+            
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 2
+            
+                    QQC2.Label {
+                        text: rootPage.sshHostLabel
+                    }
+            
+                    QQC2.TextField {
+                        Layout.fillWidth: true
+                        placeholderText: "Server Name or IP"
+                        text: serverDelegate.sshHost
+            
+                        onTextEdited: {
+                            serversModel.setProperty(serverDelegate.index, "sshHost", text);
+                            rootPage.saveServers();
+                        }
+                    }
+                }
+            
+                ColumnLayout {
+                    Layout.preferredWidth: 100
+                    spacing: 2
+            
+                    QQC2.Label {
+                        text: rootPage.sshPortLabel
+                    }
+            
+                    QQC2.SpinBox {
+                        Layout.fillWidth: true
+                        from: 1
+                        to: 65535
+                        value: serverDelegate.sshPort
+            
+                        onValueModified: {
+                            serversModel.setProperty(serverDelegate.index, "sshPort", value);
+                            rootPage.saveServers();
+                        }
+                    }
+                }
+            }
+            
+            // SSH username and identity file.
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Kirigami.Units.smallSpacing
+                visible: serverDelegate.connectionType === "ssh"
+            
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 2
+            
+                    QQC2.Label {
+                        text: rootPage.sshUserLabel
+                    }
+            
+                    QQC2.TextField {
+                        Layout.fillWidth: true
+                        placeholderText: "john"
+                        text: serverDelegate.sshUser
+            
+                        onTextEdited: {
+                            serversModel.setProperty(serverDelegate.index, "sshUser", text);
+                            rootPage.saveServers();
+                        }
+                    }
+                }
+            
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 2
+            
+                    QQC2.Label {
+                        text: rootPage.sshIdentityFileLabel
+                    }
+            
+                    QQC2.TextField {
+                        Layout.fillWidth: true
+                        placeholderText: "~/.ssh/id_ed25519"
+                        text: serverDelegate.sshIdentityFile
+            
+                        onTextEdited: {
+                            serversModel.setProperty(
+                                serverDelegate.index,
+                                "sshIdentityFile",
+                                text
+                            );
+                            rootPage.saveServers();
+                        }
+                    }
+                }
+            }
+            
+            // Remote Docker socket.
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 2
+                visible: serverDelegate.connectionType === "ssh"
+            
+                QQC2.Label {
+                    text: rootPage.sshSocketPathLabel
+                }
+            
+                QQC2.TextField {
+                    Layout.fillWidth: true
+                    placeholderText: "/var/run/docker.sock"
+                    text: serverDelegate.sshSocketPath
+            
+                    onTextEdited: {
+                        serversModel.setProperty(
+                            serverDelegate.index,
+                            "sshSocketPath",
+                            text
+                        );
+                        rootPage.saveServers();
+                    }
+                }
+            }
+            
+            // Common server controls.
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Kirigami.Units.smallSpacing
+            
+                Item {
+                    Layout.fillWidth: true
+                }
+            
                 QQC2.CheckBox {
                     text: rootPage.enabledLabel
                     checked: serverDelegate.active
-                    Layout.alignment: Qt.AlignBottom
-
+                    Layout.alignment: Qt.AlignVCenter
+            
                     onToggled: {
                         serversModel.setProperty(serverDelegate.index, "active", checked);
                         rootPage.saveServers();
                     }
                 }
-
+            
                 QQC2.ToolButton {
                     icon.name: IconNames.remove
                     display: QQC2.AbstractButton.IconOnly
-                    Layout.alignment: Qt.AlignBottom
-
+                    Layout.alignment: Qt.AlignVCenter
+            
                     QQC2.ToolTip.text: rootPage.deleteServerTooltip
                     QQC2.ToolTip.visible: hovered
-
+            
                     onClicked: {
                         serversModel.remove(serverDelegate.index);
                         rootPage.saveServers();
@@ -296,7 +475,13 @@ Kirigami.ScrollablePage {
                     name: "",
                     host: "",
                     connectionType: "http",
-                    active: true
+                    active: true,
+                
+                    sshHost: "",
+                    sshPort: 22,
+                    sshUser: "",
+                    sshIdentityFile: "",
+                    sshSocketPath: ""
                 });
 
                 rootPage.saveServers();
