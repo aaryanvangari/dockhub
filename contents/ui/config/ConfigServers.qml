@@ -27,8 +27,14 @@ Kirigami.ScrollablePage {
     property bool cfg_showServerVolumes: false
     property bool cfg_showServerVolumesDefault: false
 
-    property string cfg_serversDefault: "[]"
+    property int cfg_logSize: 1
+    property int cfg_logSizeDefault: 1
     property string cfg_connectionTypeDefault: "[]"
+    property bool cfg_compactLayout : false
+    property bool cfg_compactLayoutDefault : false
+    property int cfg_serverLayout: 0
+    property int cfg_serverLayoutDefault: 0
+    property string cfg_serversDefault: "[]"
 
     readonly property string serversLabel: i18n("Servers")
     readonly property string serverLabel: i18n("Server")
