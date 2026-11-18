@@ -5,14 +5,15 @@
 ## Screenshots
 
 <p align="center">
-  <img src="contents/screenshots/Servers_2_column.png" alt="DockHub - Server Details 2" width="300">
-  <img src="contents/screenshots/Servers_Icon_Layout.png" alt="DockHub - Server Icons Layout" width="300">
-  <img src="contents/screenshots/Servers_Icon_Layout_Expanded.png" alt="DockHub - Server Icons Layout Expanded" width="300">
-  <img src="contents/screenshots/Server_Dashboard.png" alt="DockHub - Servers" width="300">
-  <img src="contents/screenshots/Server_Dashboard_Compact.png" alt="DockHub - Servers - Compact" width="300">
-  <img src="contents/screenshots/Container_Expanded.png" alt="DockHub - Container Expanded" width="300">
-  <img src="contents/screenshots/Image_Expanded.png" alt="DockHub - Image Expanded" width="300">
-  <img src="contents/screenshots/Settings_General.png" alt="DockHub - Settings" width="300">
+  <img src="contents/screenshots/Servers_2_column.png" alt="DockHub - Server Details 2" width="250">
+  <img src="contents/screenshots/Servers_Icon_Layout.png" alt="DockHub - Server Icons Layout" width="250">
+  <img src="contents/screenshots/Servers_Icon_Layout_Expanded.png" alt="DockHub - Server Icons Layout Expanded" width="250">
+  <img src="contents/screenshots/Server_Dashboard.png" alt="DockHub - Servers" width="250">
+  <img src="contents/screenshots/Server_Dashboard_Compact.png" alt="DockHub - Servers - Compact" width="250">
+  <img src="contents/screenshots/Container_Expanded.png" alt="DockHub - Container Expanded" width="250">
+  <img src="contents/screenshots/Image_Expanded.png" alt="DockHub - Image Expanded" width="250">
+  <img src="contents/screenshots/Settings_General.png" alt="DockHub - Settings" width="250">
+  <img src="contents/screenshots/Settings_Servers.png" alt="DockHub - Settings Servers" width="250">
 </p>
 
 ## Videos
