@@ -1,3 +1,12 @@
+dockhub (2.3.0-1) unstable; urgency=medium
+
+  * Added SSH connection type
+  * Network performance improvements by limiting API calls based on containers
+  * Settings entry to select timer to fetch stats defaulted to 2 mins
+  * UI performance improvements by optimizing UI elements
+  
+ -- Aaryan Vangari <aaryanvangari@gmail.com>  Mon, 19 Nov 2026 03:20:00 +0530
+
 dockhub (2.2.0-1) unstable; urgency=medium
 
   * New Icon Layout for servers list
