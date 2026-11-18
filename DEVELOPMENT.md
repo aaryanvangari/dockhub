@@ -94,25 +94,25 @@ Component groups:
 
 #### UI Components Summary
 
-| # | File | Summary |
-|---|------|---------|
-| 1 | `StackListItem.md` | Expandable stack list item showing container count and nested containers |
-| 2 | `ServerLegend.md` | Grid overview of server resource counts (stacks, volumes, images, networks, containers) |
-| 3 | `DisclosureHeader.md` | Reusable collapsible accordion header for detail sections |
-| 4 | `NetworkListItem.md` | Expandable network detail view with IPAM and attached containers |
-| 5 | `LegendCard.md` | Clickable card widget for showing label-value pairs |
-| 6 | `ImageListItem.md` | Expandable image detail with labels, environment, and layer history |
-| 7 | `ResourceItemsPage.md` | Paginated resource list page dispatching to type-specific components |
-| 8 | `VolumeListItem.md` | Expandable volume detail with mounted containers |
-| 9 | `DashboardController.md` | Central backend managing all data fetching, caching, stats, logs, and navigation |
-| 10 | `ServerOverviewMetric.md` | Mapper wrapper delegating to ServerMetric or ContainerSummaryMetric |
-| 11 | `EventListItem.md` | Read-only event display with timestamp, type, and details |
-| 12 | `ContainerLogsPage.md` | Scrollable real-time log viewer with auto-follow behavior |
-| 13 | `ContainerSummaryMetric.md` | Compact running/total container summary line |
-| 14 | `ContainerDetail.md` | Expanded container detail panel with CPU, memory, ports, volumes, networks |
-| 15 | `ServerMetric.md` | Single metric label-value row with optional hover tooltip |
-| 16 | `ContainerListItem.md` | Main container list item with name, CPU, memory, ID, and expand/collapse |
-| 17 | `ServerListItem.md` | Clickable server entry card with multi-column stats layout |
+| #   | File                        | Summary                                                                                 |
+| --- | --------------------------- | --------------------------------------------------------------------------------------- |
+| 1   | `StackListItem.md`          | Expandable stack list item showing container count and nested containers                |
+| 2   | `ServerLegend.md`           | Grid overview of server resource counts (stacks, volumes, images, networks, containers) |
+| 3   | `DisclosureHeader.md`       | Reusable collapsible accordion header for detail sections                               |
+| 4   | `NetworkListItem.md`        | Expandable network detail view with IPAM and attached containers                        |
+| 5   | `LegendCard.md`             | Clickable card widget for showing label-value pairs                                     |
+| 6   | `ImageListItem.md`          | Expandable image detail with labels, environment, and layer history                     |
+| 7   | `ResourceItemsPage.md`      | Paginated resource list page dispatching to type-specific components                    |
+| 8   | `VolumeListItem.md`         | Expandable volume detail with mounted containers                                        |
+| 9   | `DashboardController.md`    | Central backend managing all data fetching, caching, stats, logs, and navigation        |
+| 10  | `ServerOverviewMetric.md`   | Mapper wrapper delegating to ServerMetric or ContainerSummaryMetric                     |
+| 11  | `EventListItem.md`          | Read-only event display with timestamp, type, and details                               |
+| 12  | `ContainerLogsPage.md`      | Scrollable real-time log viewer with auto-follow behavior                               |
+| 13  | `ContainerSummaryMetric.md` | Compact running/total container summary line                                            |
+| 14  | `ContainerDetail.md`        | Expanded container detail panel with CPU, memory, ports, volumes, networks              |
+| 15  | `ServerMetric.md`           | Single metric label-value row with optional hover tooltip                               |
+| 16  | `ContainerListItem.md`      | Main container list item with name, CPU, memory, ID, and expand/collapse                |
+| 17  | `ServerListItem.md`         | Clickable server entry card with multi-column stats layout                              |
 
 ### Layer 2 — JavaScript API Layer
 
@@ -142,36 +142,36 @@ Exposed API functions:
 | Networks          | `networks()`, `inspectNetwork()`                                                                                                                 |
 | Volumes           | `volumes()`, `inspectVolume()`                                                                                                                   |
 | Events            | `events()`                                                                                                                                       |
+
 ##### API Endpoints
 
-| Function | Line | Docker API Endpoint | Description |
-|---|---|---|---|
-| `ping()` | `/ping` | Checks Docker Engine reachability. |
-| `version()` | `/version` | Returns engine version info. |
-| `info()` | `/info` | Returns daemon system info. |
-| `diskUsage()` | `/info` with `diskUsage=1` | Returns disk usage stats. |
-| `containers()` | `/containers/json` | Lists containers (supports `all`, `filters`, `limit`). |
-| `inspectContainer()` | `/containers/{id}/inspect` | Inspects a single container's metadata. |
-| `startContainer()` | `/containers/{id}/start` | Starts a stopped container. |
-| `stopContainer()` | `/containers/{id}/stop` | Stops a running container. |
-| `restartContainer()` | `/containers/{id}/restart` | Restarts a container. |
-| `pauseContainer()` | `/containers/{id}/pause` | Pauses a container (cgroups). |
-| `unpauseContainer()` | `/containers/{id}/unpause` | Unpauses a previously paused container. |
-| `removeContainer()` | `/containers/{id}` | Removes a container (supports `force`, `volumes`). |
-| `containerStats()` | `/containers/{id}/stats` | One-shot container resource usage snapshot. |
-| `containerLogs()` | `/containers/{id}/logs` | Fetches complete log text (supports `since`, `timestamps`, `follow`). |
-| `streamContainerLogs()` | WebSocket via `UnixSocketBridge` | Opens a live log WebSocket with multiplexed stdout/stderr support. |
-| `stopContainerLogs()` | — | Closes an active log stream by `streamId`. |
-| `images()` | `/images/json` | Lists images. |
-| `inspectImage()` | `/images/{id}/inspect` | Inspects a single image. |
-| `imageHistory()` | `/images/{id}/history` | Returns image layer history. |
-| `removeImage()` | `/images/{id}` | Removes an image. |
-| `networks()` | `/networks` | Lists networks. |
-| `inspectNetwork()` | `/networks/{id}` | Inspects a network. |
-| `volumes()` | `/volumes` | Lists volumes. |
-| `inspectVolume()` | `/volumes/{name}` | Inspects a volume. |
-| `events()` | `/events` | Subscribes to Docker daemon events (supports `since`, `until`, `filters`). |
-
+| Function                | Line                             | Docker API Endpoint                                                        | Description |
+| ----------------------- | -------------------------------- | -------------------------------------------------------------------------- | ----------- |
+| `ping()`                | `/ping`                          | Checks Docker Engine reachability.                                         |
+| `version()`             | `/version`                       | Returns engine version info.                                               |
+| `info()`                | `/info`                          | Returns daemon system info.                                                |
+| `diskUsage()`           | `/info` with `diskUsage=1`       | Returns disk usage stats.                                                  |
+| `containers()`          | `/containers/json`               | Lists containers (supports `all`, `filters`, `limit`).                     |
+| `inspectContainer()`    | `/containers/{id}/inspect`       | Inspects a single container's metadata.                                    |
+| `startContainer()`      | `/containers/{id}/start`         | Starts a stopped container.                                                |
+| `stopContainer()`       | `/containers/{id}/stop`          | Stops a running container.                                                 |
+| `restartContainer()`    | `/containers/{id}/restart`       | Restarts a container.                                                      |
+| `pauseContainer()`      | `/containers/{id}/pause`         | Pauses a container (cgroups).                                              |
+| `unpauseContainer()`    | `/containers/{id}/unpause`       | Unpauses a previously paused container.                                    |
+| `removeContainer()`     | `/containers/{id}`               | Removes a container (supports `force`, `volumes`).                         |
+| `containerStats()`      | `/containers/{id}/stats`         | One-shot container resource usage snapshot.                                |
+| `containerLogs()`       | `/containers/{id}/logs`          | Fetches complete log text (supports `since`, `timestamps`, `follow`).      |
+| `streamContainerLogs()` | WebSocket via `UnixSocketBridge` | Opens a live log WebSocket with multiplexed stdout/stderr support.         |
+| `stopContainerLogs()`   | —                                | Closes an active log stream by `streamId`.                                 |
+| `images()`              | `/images/json`                   | Lists images.                                                              |
+| `inspectImage()`        | `/images/{id}/inspect`           | Inspects a single image.                                                   |
+| `imageHistory()`        | `/images/{id}/history`           | Returns image layer history.                                               |
+| `removeImage()`         | `/images/{id}`                   | Removes an image.                                                          |
+| `networks()`            | `/networks`                      | Lists networks.                                                            |
+| `inspectNetwork()`      | `/networks/{id}`                 | Inspects a network.                                                        |
+| `volumes()`             | `/volumes`                       | Lists volumes.                                                             |
+| `inspectVolume()`       | `/volumes/{name}`                | Inspects a volume.                                                         |
+| `events()`              | `/events`                        | Subscribes to Docker daemon events (supports `since`, `until`, `filters`). |
 
 #### `DockerLogParser.js`
 
@@ -234,6 +234,37 @@ Responsibilities:
 - Handle HTTP requests for remote Docker API endpoints.
 - Convert Docker responses into application data.
 
+#### `SshTunnelManager` (SSH tunnel forwarding)
+
+Location: `src/SshTunnelManager.h`, `src/SshTunnelManager.cpp`
+
+A `QObject` subclass registered as a QML element via `QML_ELEMENT`. Manages OpenSSH-based TCP port forwarding tunnels to remote Docker Unix sockets.
+
+QML-exposed methods:
+
+| Method                                | Purpose                                                     |
+| ------------------------------------- | ----------------------------------------------------------- |
+| `startTunnel(serverId, sshHost, ...)` | Start an SSH tunnel and return a local `http://` URL.       |
+| `stopTunnel(serverId)`                | Stop a specific tunnel.                                     |
+| `stopAllTunnels()`                    | Stop every active tunnel.                                   |
+| `tunnelUrl(serverId)`                 | Return the local HTTP URL when the tunnel is ready.         |
+| `isTunnelActive(serverId)`            | Check whether the tunnel has completed its readiness probe. |
+
+Signals:
+
+- `tunnelStarted(serverId, localUrl)` — Tunnel is ready for Docker API traffic.
+- `tunnelFailed(serverId, error)` — Tunnel failed or was terminated.
+- `tunnelStopped(serverId)` — Tunnel was explicitly stopped.
+- `tunnelOutput(serverId, output)` — Raw SSH stdout/stderr output.
+
+Key design behaviors:
+
+- **Startup sequence:** Allocates an ephemeral local port, starts `ssh -N -T`, probes the forwarded port with `QTcpSocket`, emits `tunnelStarted` when the probe succeeds.
+- **Timeout:** 10-second startup timeout; on failure, the process is terminated and a `tunnelFailed` signal is emitted.
+- **Health monitoring:** `ServerAliveInterval=30`, `ServerAliveCountMax=3`; `ExitOnForwardFailure=yes` ensures immediate `tunnelFailed` on port-forward failure.
+- **Identity expansion:** `~/` is expanded via `QDir::home()` for the identity file.
+- **Lifecycle:** Replaced tunnels are stopped before a new one starts; on destruction all tunnels are torn down.
+
 ### Layer 4 — Docker Engine API Layer
 
 All Docker interactions use the standard Docker Engine API.
@@ -246,8 +277,19 @@ All Docker interactions use the standard Docker Engine API.
 **Example: Fetching containers**
 
 1. QML component (e.g., `DashboardController`) requests container information.
-2. JavaScript `DockerApi.js` routes the request, selecting the correct connection type.
-3. C++ backend receives the request via `UnixSocketBridge` (local) or `DockerClient` (remote).
+
+2. **Example: Fetching containers**
+
+    2.1 JavaScript `DockerApi.js` routes the request, selecting the correct connection type.
+
+    2.2 C++ backend receives the request via `UnixSocketBridge` (local) or `DockerClient` (remote).
+
+3. **Example: Fetching containers (SSH tunnel)**
+
+    3.1 `isLocalServer()` checks `connectionType`; for `"ssh"` the server is treated as local.
+
+    3.2 `SshTunnelManager.startTunnel()` is called; when `tunnelStarted` fires, `connectionReady` is set to `true` and `url` is updated to the local `http://127.0.0.1:<port>` endpoint.
+
 4. Docker API request is executed over the correct transport.
 5. Docker response is parsed.
 6. C++ emits signals (`streamingData`, `requestFinished`, `streamingFinished`).
@@ -271,13 +313,15 @@ All Docker interactions use the standard Docker Engine API.
 - Log streams must handle multiplexed stdout/stderr correctly.
 - Chunked transfer decoding must follow RFC 7230 for streaming responses.
 - All streaming state must be safe for synchronous cancellation.
+- SSH tunnels must be destroyed before loading a new configuration.
+- SSH servers must not be refreshed until `connectionReady` is `true`.
 
 ### Configuration Components
 
 Location: `contents/ui/config/`
 
-- `ConfigGeneral.qml` — General settings (refresh intervals, visibility toggles).
-- `ConfigServers.qml` — Server list and management (add, remove, edit, enable/disable).
+- `ConfigGeneral.qml` — General settings (refresh intervals, visibility toggles, compact layout for containers, log font size, server layouts).
+- `ConfigServers.qml` — Server list and management (add, remove, edit, enable/disable, SSH connection fields).
 - `ServerOverviewLayoutEditor.qml` — Layout editor for server overview metrics.
 
 ## Adding a New Feature
@@ -348,8 +392,27 @@ Update `main.qml` to include the new component and connect signals/slots.
 The `DockerApi.js` module logs requests and responses:
 
 ```javascript
-console.log("[Dockhub API] -> " + serverLabel + " " + resource + " " + method + " " + path);
-console.log("[Dockhub API] <- " + serverLabel + " " + resource + " " + result.status + " " + (Date.now() - startedAt) + " ms");
+console.log(
+  "[Dockhub API] -> " +
+    serverLabel +
+    " " +
+    resource +
+    " " +
+    method +
+    " " +
+    path,
+);
+console.log(
+  "[Dockhub API] <- " +
+    serverLabel +
+    " " +
+    resource +
+    " " +
+    result.status +
+    " " +
+    (Date.now() - startedAt) +
+    " ms",
+);
 ```
 
 ### Check Docker API

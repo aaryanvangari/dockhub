@@ -29,6 +29,7 @@
 - Support for local rootful and rootless Docker installations.
 - Support for remote Docker API endpoints.
 - Support for Docker socket proxies.
+- Support for SSH tunnels to remote Docker Unix sockets.
 - Give each server a custom name for easy identification.
 - Enable or disable individual servers independently.
 - Monitor server connection health (online, offline or unreachable).
@@ -67,7 +68,7 @@
 - Configure the dashboard refresh interval.
 - Choose which metrics appear in server overview cards.
 - Configure the resource usage statistics refresh interval.
-- Configure server layout with options `2 Columns`, `3 Columns` and `Overview` 
+- Configure server layout with options `2 Columns`, `3 Columns` and `Overview`
 - Configure compact layout for containers overview.
 - Select which resource pages to display, including stacks, images, networks, volumes and events.
 - Configure log font size for the real-time log viewer.
@@ -144,9 +145,23 @@ Example:
 
 Local Unix socket communication is handled by DockHub's native C++ plugin (`UnixSocketBridge`), which manages HTTP request construction, chunked-transfer decoding, and persistent streaming connections over `QLocalSocket`.
 
-### Future Connection Methods
+### 4. SSH Tunnel to Remote Docker Socket
 
-SSH connections and a dedicated DockHub Agent are not currently supported. They may be considered in future releases based on user requirements.
+Connect to a Docker daemon running on a remote machine through an SSH tunnel. DockHub establishes a local TCP port forwarding tunnel via OpenSSH and exposes the remote Docker Unix socket as a local HTTP endpoint.
+
+To configure this connection type:
+
+- **SSH Host:** Remote machine hostname or IP address.
+- **SSH Port:** SSH port (default 22).
+- **SSH Username:** Username for authentication.
+- **SSH Identity File:** Path to the SSH private key (e.g. `~/.ssh/id_ed25519`).
+- **Remote Docker Socket:** Path to the Docker socket on the remote machine (e.g. `/var/run/docker.sock`).
+
+The SSH tunnel is managed by the native C++ component (`SshTunnelManager`), which runs OpenSSH with `BatchMode=yes`, `ExitOnForwardFailure=yes`, and health checks via `ServerAliveInterval`.
+
+## Future Connection Methods
+
+A dedicated DockHub Agent is not currently supported. It may be considered in future releases based on user requirements.
 
 ## Requirements
 
@@ -197,6 +212,7 @@ Copying only the `contents` directory is not sufficient when the native plugin h
    - **Connection Type:** Select the appropriate connection method.
    - **Host URL / Socket Path:** Enter the Docker API endpoint or local Unix socket path, depending on the selected connection type.
    - **Enabled:** Enable or disable the server.
+   - **SSH Configuration** (SSH connections only): SSH host, port, username, identity file, and remote Docker socket path.
 
 6. Save the configuration.
 
@@ -220,6 +236,13 @@ Copying only the `contents` directory is not sufficient when the native plugin h
 - Select the correct rootful or rootless Unix socket.
 - Ensure the user running DockHub has permission to access the socket.
 
+**SSH Tunnel**
+
+- Ensure Docker is running on the remote machine and listening on the configured Unix socket path.
+- Ensure the SSH user has permission to access the remote Docker socket.
+- Provide a valid SSH identity file if required.
+- Ensure the SSH tunnel becomes ready before opening the server.
+
 ### Using the Dashboard
 
 - **Server List:** View configured Docker servers, connection status and quick statistics.
@@ -233,11 +256,12 @@ Copying only the `contents` directory is not sufficient when the native plugin h
 
 - **Refresh Dashboard Every:** Configure the dashboard refresh interval.
 - **Refresh Usage Every:** Configure how frequently resource usage statistics are updated.
-- **Server Layouts:** Choose which layouts for servers list.
+- **Server Layouts:** Choose the layout for the servers list (`2 Columns`, `3 Columns`, `Overview`).
 - **Server Overview Refresh Interval:** Configure the refresh interval for server overview information.
 - **Show Server Images:** Control whether image information is displayed.
 - **Show Server Volumes:** Control whether volume information is displayed.
-- **Logs Font Size:** Choose the logs page font size
+- **Compact Layout:** Toggle compact layout for containers overview.
+- **Logs Font Size:** Choose the logs page font size.
 
 ### Server Settings
 
@@ -245,6 +269,7 @@ Copying only the `contents` directory is not sufficient when the native plugin h
 - **Connection Type:** Select the connection method.
 - **Host URL / Socket Path:** Configure the endpoint or Unix socket path.
 - **Enabled:** Enable or disable the server.
+- **SSH Configuration** (SSH connections only): SSH host, port, username, identity file, and remote Docker socket path.
 
 ## Troubleshooting
 
@@ -298,6 +323,14 @@ ls -l "$XDG_RUNTIME_DIR/docker.sock"
 - Ensure the server is enabled.
 - Refresh the dashboard.
 
+### SSH tunnel does not connect
+
+- Verify the SSH host is reachable and the port is correct.
+- Check that the SSH user has permission to access the remote Docker socket.
+- Verify the SSH identity file exists and has correct permissions.
+- Check that OpenSSH is installed (`ssh -V`).
+- Inspect terminal output for SSH errors.
+
 ### Check the logs
 
 ```bash
@@ -330,6 +363,7 @@ See the [Developer Guide](./DEVELOPMENT.md) for development and build instructio
 - Built using the KDE Plasma Plasmoid framework.
 - Uses QtQuick/QML for the user interface.
 - Uses a native C++ QML plugin (`UnixSocketBridge`) for local Docker Unix socket communication and HTTP streaming.
+- Uses a native C++ QML plugin (`SshTunnelManager`) for SSH tunnel management and local port forwarding to remote Docker sockets.
 - Integrates with the Docker Engine API.
 
 ## Links
@@ -339,3 +373,4 @@ See the [Developer Guide](./DEVELOPMENT.md) for development and build instructio
 - [KDE Store](https://store.kde.org/)
 - [Docker Engine API Documentation](https://docs.docker.com/reference/api/engine/)
 - [Docker Engine Security](https://docs.docker.com/engine/security/)
+- [OpenSSH](https://www.openssh.com/)
